@@ -1,0 +1,2359 @@
+import React, { useState, useEffect, useMemo, createContext, useContext } from 'react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Megaphone, 
+  CheckSquare, 
+  CreditCard, 
+  BarChart3, 
+  Bell, 
+  Search, 
+  Plus, 
+  Filter, 
+  MoreHorizontal, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  Smartphone, 
+  Instagram, 
+  Facebook, 
+  Twitter, 
+  CheckCircle, 
+  XCircle, 
+  Eye, 
+  Download, 
+  Wallet, 
+  AlertTriangle, 
+  FileText, 
+  Upload, 
+  Calendar, 
+  Send, 
+  UserPlus, 
+  ShieldAlert, 
+  Lock, 
+  Unlock, 
+  ChevronLeft, 
+  Briefcase, 
+  RefreshCw, 
+  Hash, 
+  Link as LinkIcon, 
+  Bot, 
+  UserCheck, 
+  Phone, 
+  TrendingUp, 
+  Heart, 
+  MessageCircle, 
+  Globe, 
+  Play,
+  Sun,
+  Moon,
+  Crown, 
+  Trophy, 
+  Award,
+  Zap,
+  BadgeCheck,
+  Radio,
+  Clock,
+  ShieldCheck,
+  Save,
+  RotateCcw,
+  Settings
+} from 'lucide-react';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  Legend 
+} from 'recharts';
+
+// --- SYSTEM SETTINGS CONFIGURATION ---
+
+const DEFAULT_SYSTEM_SETTINGS = {
+  tierConfig: {
+    tierA_minFollowers: 10000,
+    tierB_minFollowers: 5000,
+    tierC_minFollowers: 3000,
+    tierD_minFollowers: 2000,
+    tierE_minFollowers: 0,
+    autoPromotion: true,
+    autoDowngrade: false
+  },
+  vipConfig: {
+    campaignsRequired: 5,
+    referralRequired: 5,
+    vipDurationDays: 365,
+    autoRenewal: false,
+    priorityAccess: true,
+    vipFee: 0
+  },
+  campaignConfig: {
+    defaultExpReward: 50,
+    maxCampaignSize: 500,
+    minPayout: 10,
+    maxPayout: 1000,
+    taskExpiryDays: 7,
+    autoApprovalThreshold: 80,
+    autoRejectThreshold: 30
+  },
+  rewardConfig: {
+    expPerTaskDefault: 50,
+    expMultiplier: 1,
+    leaderboardResetFrequency: "monthly",
+    expDecayEnabled: false,
+    bonusWeekendEnabled: false,
+    rewardConversionRate: 0.1
+  },
+  fraudConfig: {
+    duplicateIpSensitivity: 70,
+    fakeFollowerThreshold: 40,
+    autoFlagThreshold: 80,
+    manualReviewThreshold: 60,
+    riskScoreWeight: 0.5
+  },
+  paymentConfig: {
+    provider: "TNG",
+    minPayout: 50,
+    paymentDelayDays: 3,
+    currency: "MYR",
+    autoPayoutEnabled: false
+  },
+  aiEngineConfig: {
+    performanceWeight: 0.4,
+    roiWeight: 0.3,
+    riskWeight: 0.3,
+    assignmentConfidenceThreshold: 75,
+    autoAssignmentEnabled: false
+  }
+};
+
+const SystemSettingsContext = createContext();
+
+export const useSystemSettings = () => useContext(SystemSettingsContext);
+
+const SystemSettingsProvider = ({ children }) => {
+  const [settings, setSettings] = useState(DEFAULT_SYSTEM_SETTINGS);
+
+  const updateSetting = (section, field, value) => {
+    setSettings(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const resetSettings = () => setSettings(DEFAULT_SYSTEM_SETTINGS);
+
+  return (
+    <SystemSettingsContext.Provider value={{ settings, updateSetting, resetSettings }}>
+      {children}
+    </SystemSettingsContext.Provider>
+  );
+};
+
+
+// --- Theme Constants ---
+const DARK_THEME = {
+  bg: 'bg-[#1A1A1A]',
+  card: 'bg-[#222] border border-white/10 shadow-xl',
+  cardSecondary: 'bg-[#3D4421] border border-[#CCFF00]/30',
+  textMain: 'text-white',
+  textMuted: 'text-gray-400',
+  accentLime: 'text-[#CCFF00]',
+  accentBlue: 'text-[#00F0FF]',
+  btnPrimary: 'bg-[#CCFF00] text-black hover:bg-[#b3e600] border border-[#CCFF00] font-bold uppercase tracking-wide',
+  btnSecondary: 'bg-transparent text-[#CCFF00] border border-[#CCFF00] hover:bg-[#CCFF00]/10 font-bold uppercase tracking-wide',
+  btnGhost: 'text-gray-400 hover:text-white hover:bg-white/5',
+  input: 'bg-[#111] border border-white/20 text-white focus:border-[#CCFF00] focus:ring-1 focus:ring-[#CCFF00]',
+  borderColor: 'border-white/10',
+  navActive: 'bg-[#CCFF00]/10 text-[#CCFF00] border-[#CCFF00]',
+  navInactive: 'border-transparent text-gray-500 hover:text-white hover:bg-white/5',
+  headerBg: 'bg-[#1A1A1A]/90',
+  sidebarBg: 'bg-black',
+  tableHeader: 'bg-[#111] text-gray-500',
+  tableRowHover: 'hover:bg-white/5',
+};
+
+const LIGHT_THEME = {
+  bg: 'bg-[#F0F2F5]',
+  card: 'bg-white border border-gray-200 shadow-sm',
+  cardSecondary: 'bg-[#ECFCCB] border border-[#84CC16]/30',
+  textMain: 'text-gray-900',
+  textMuted: 'text-gray-500',
+  accentLime: 'text-[#4D7C0F]', // Darker lime for text visibility on light bg
+  accentBlue: 'text-[#0284C7]',
+  btnPrimary: 'bg-[#CCFF00] text-black hover:bg-[#b3e600] border border-[#A3E635] font-bold uppercase tracking-wide',
+  btnSecondary: 'bg-transparent text-[#4D7C0F] border border-[#4D7C0F] hover:bg-[#CCFF00]/20 font-bold uppercase tracking-wide',
+  btnGhost: 'text-gray-500 hover:text-black hover:bg-gray-100',
+  input: 'bg-white border border-gray-300 text-gray-900 focus:border-[#4D7C0F] focus:ring-1 focus:ring-[#4D7C0F]',
+  borderColor: 'border-gray-200',
+  navActive: 'bg-[#ECFCCB] text-[#4D7C0F] border-[#4D7C0F]',
+  navInactive: 'border-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100',
+  headerBg: 'bg-white/90',
+  sidebarBg: 'bg-white',
+  tableHeader: 'bg-gray-50 text-gray-500',
+  tableRowHover: 'hover:bg-gray-50',
+};
+
+// --- Global Styles for Fonts & Dynamic Variables ---
+const GlobalStyles = ({ isDarkMode }) => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@400;500;600;700&display=swap');
+    
+    :root {
+      --color-bg: ${isDarkMode ? '#1A1A1A' : '#F0F2F5'};
+      --color-text: ${isDarkMode ? '#ffffff' : '#111827'};
+      --color-lime: #CCFF00;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      font-family: 'Montserrat', sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    h1, h2, h3, .stat-value {
+      font-family: 'Anton', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .industrial-border {
+      border: 1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)'};
+    }
+    
+    .lime-border {
+      border: 1px solid var(--color-lime);
+    }
+    
+    .neon-text {
+       text-shadow: 0 0 10px rgba(204, 255, 0, 0.5);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: ${isDarkMode ? '#111' : '#E5E7EB'}; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: ${isDarkMode ? '#444' : '#9CA3AF'}; 
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-lime); 
+    }
+  `}</style>
+);
+
+// --- Utility Functions ---
+
+const calculateTier = (followers, config) => {
+  if (followers >= config.tierA_minFollowers) return 'A';
+  if (followers >= config.tierB_minFollowers) return 'B';
+  if (followers >= config.tierC_minFollowers) return 'C';
+  if (followers >= config.tierD_minFollowers) return 'D';
+  return 'E';
+};
+
+const calculateRating = (completed, submitted) => {
+  if (!submitted || submitted === 0) return 0;
+  return Math.min(5, ((completed / submitted) * 5).toFixed(1));
+};
+
+const formatCurrency = (amount) => `RM ${amount.toLocaleString()}`;
+
+const addDays = (dateStr, days) => {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().split('T')[0];
+};
+
+// --- Mock Data Generators ---
+
+const generateSidekicks = (count, settings) => {
+  const platforms = ['Instagram', 'TikTok', 'Facebook', 'X (Twitter)', 'Threads'];
+  
+  const realNames = [
+    "Alex Rivera", "Jordan Lee", "Casey Smith", "Taylor Kim", "Morgan Chen", 
+    "Riley Johnson", "Jamie Doe", "Quinn Patel", "Avery Brooks", "Cameron White", 
+    "Reese Davis", "Skyler Evans", "Dakota Wilson", "Hayden Clark", "Blake Lewis", 
+    "Charlie Walker", "Peyton Hall", "Finley Young", "Rowan Allen", "Sawyer King", 
+    "Emerson Wright", "Parker Scott", "Logan Green", "Hunter Baker", "Kai Adams", 
+    "Phoenix Nelson", "Sage Carter", "Rory Mitchell", "Remi Perez", "River Roberts", 
+    "Harper Turner", "Ezra Phillips", "Jude Campbell", "Scout Parker", "Ellis Morris", 
+    "Ari Sanchez", "Milan Reed", "Indigo Cook", "Ash Morgan", "Onyx Bell", 
+    "Eden Murphy", "August Bailey", "Julian Gray", "Micah Price", "Jesse Bennett", 
+    "Drew Wood", "Reed Barnes", "Spencer Ross", "Tatum Watson", "Dallas Kelly"
+  ];
+
+  return Array.from({ length: count }, (_, i) => {
+    const followers = Math.floor(Math.random() * 15000) + 500;
+    const tier = calculateTier(followers, settings.tierConfig);
+    const completed = Math.floor(Math.random() * 50);
+    const submitted = completed + Math.floor(Math.random() * 5);
+    const name = realNames[i % realNames.length];
+    const referralCount = Math.floor(Math.random() * 8);
+    
+    // VIP Logic
+    const isVip = i < 5; // Top 5 are active VIPs for UI demo
+    let vipStatus = 'NotEligible';
+    
+    if (isVip) {
+      vipStatus = 'Active';
+    } else if (i === 6) {
+      vipStatus = 'PaymentSubmitted';
+    } else if (i === 7) {
+      vipStatus = 'PendingApproval';
+    } else if (completed >= settings.vipConfig.campaignsRequired && referralCount >= settings.vipConfig.referralRequired) {
+      vipStatus = 'Eligible';
+    }
+
+    const approvedPaidTasks = Math.floor(completed * 0.9);
+    
+    return {
+      id: `SK-${1000 + i}`,
+      name: name,
+      handle: `@${name.toLowerCase().replace(' ', '_')}`,
+      tier,
+      followers,
+      platform: platforms[Math.floor(Math.random() * platforms.length)],
+      rating: calculateRating(completed, submitted),
+      completedTasks: completed,
+      submittedTasks: submitted,
+      status: Math.random() > 0.1 ? 'Active' : 'Inactive',
+      earnings: Math.floor(Math.random() * 5000),
+      flagged: Math.random() > 0.98, 
+      joinDate: '2023-01-15',
+      
+      // New Sidekick Fields
+      level: vipStatus === 'Active' ? 'VIP' : 'Premium',
+      vipStatus: vipStatus,
+      vipApprovedAt: isVip ? '2023-05-20' : null,
+      vipExpiresAt: isVip ? '2024-05-20' : null,
+      vipReceiptUrl: (vipStatus === 'PaymentSubmitted' || vipStatus === 'PendingApproval') ? 'receipt_123.jpg' : null,
+      verifiedBadge: vipStatus === 'Active',
+      referralCode: `${name.substring(0,3).toUpperCase()}${100+i}`,
+      referredBy: null,
+      referralCount: referralCount,
+      campaignCompletedCount: completed,
+      
+      // EXP & Stats
+      totalExp: Math.floor(Math.random() * 5000) + (isVip ? 2000 : 0),
+      monthlyExp: Math.floor(Math.random() * 800),
+      approvedPaidTasks: approvedPaidTasks,
+      attemptedTasks: submitted,
+      successRate: submitted > 0 ? (approvedPaidTasks / submitted) * 100 : 0
+    };
+  });
+};
+
+const initialRegistrations = [
+  { 
+    id: 'REG-001', 
+    name: 'Sarah Lee', 
+    contactNumber: '+60 12-345 6789',
+    socialProfiles: [
+        { platform: 'Instagram', handle: '@sarah.lifestyle', followers: 12500, url: '#' }
+    ],
+    highlightPost: {
+        url: 'https://instagram.com/p/highlight1',
+        likes: 1240,
+        comments: 45,
+        type: 'Image'
+    },
+    status: 'Pending', 
+    submittedAt: '2 hrs ago', 
+    evidence: 'screenshot1.jpg', 
+    verificationStatus: 'Unverified' 
+  },
+  { 
+    id: 'REG-002', 
+    name: 'Mike Chen', 
+    contactNumber: '+60 17-888 9999',
+    socialProfiles: [
+        { platform: 'TikTok', handle: '@mike_eats', followers: 2100, url: '#' },
+        { platform: 'Instagram', handle: '@mike.chen.food', followers: 850, url: '#' }
+    ],
+    highlightPost: {
+        url: 'https://tiktok.com/@mike_eats/video/highlight',
+        likes: 5600,
+        comments: 120,
+        type: 'Video'
+    },
+    status: 'Pending', 
+    submittedAt: '5 hrs ago', 
+    evidence: 'screenshot2.jpg', 
+    verificationStatus: 'Unverified' 
+  },
+];
+
+const initialTasks = [
+  { 
+    id: 1, 
+    title: 'Summer Sale Launch', 
+    platform: 'Instagram', 
+    tier: 'A', 
+    required: 50, 
+    applied: 50, 
+    accepted: 50, 
+    completed: 45, 
+    status: 'Active', 
+    deadline: '2023-11-20', 
+    payout: 150, 
+    budget: 7500, 
+    spent: 6750, 
+    hiddenDetails: 'Use hashtag #SummerVibes2023. Tag @BrandOfficial.',
+    instructionsLocked: false,
+    
+    // New Fields
+    expReward: 50,
+    vipOnly: false,
+    minFollowersOverride: null,
+    requiredPlatform: 'Instagram'
+  },
+  { 
+    id: 2, 
+    title: 'App Install Campaign', 
+    platform: 'TikTok', 
+    tier: 'C', 
+    required: 200, 
+    applied: 120, 
+    accepted: 90, 
+    completed: 80, 
+    status: 'Active', 
+    deadline: '2023-11-25', 
+    payout: 50, 
+    budget: 10000, 
+    spent: 4000, 
+    hiddenDetails: 'Link in bio must be: bit.ly/install-app-now',
+    instructionsLocked: true,
+    
+    expReward: 25,
+    vipOnly: false,
+    minFollowersOverride: null,
+    requiredPlatform: 'TikTok'
+  },
+  { 
+    id: 3, 
+    title: 'Tech Review Thread', 
+    platform: 'X (Twitter)', 
+    tier: 'B', 
+    required: 15, 
+    applied: 12, 
+    accepted: 10, 
+    completed: 8, 
+    status: 'Active', 
+    deadline: '2023-11-28', 
+    payout: 80, 
+    budget: 1200, 
+    spent: 800, 
+    hiddenDetails: 'Quote retweet the main announcement with positive sentiment.',
+    instructionsLocked: true,
+    
+    expReward: 100,
+    vipOnly: true, // VIP Only example
+    minFollowersOverride: 5000,
+    requiredPlatform: 'X (Twitter)'
+  },
+];
+
+const initialApplications = [
+    { id: 1, taskId: 2, sidekickId: 'SK-1001', name: 'Alex Rivera', tier: 'C', status: 'Accepted', appliedAt: '2023-11-01' },
+    { id: 2, taskId: 2, sidekickId: 'SK-1002', name: 'Jordan Lee', tier: 'B', status: 'Accepted', appliedAt: '2023-11-01' },
+    { id: 3, taskId: 2, sidekickId: 'SK-1003', name: 'Casey Smith', tier: 'D', status: 'Rejected', appliedAt: '2023-11-02' },
+];
+
+const initialApprovals = [
+  { 
+    id: 101, 
+    sidekickName: 'Sarah Lee', 
+    sidekickId: 'SK-1045',
+    handle: '@sarah.lifestyle',
+    taskId: 1,
+    task: 'Summer Sale Launch', 
+    proofUrl: '#', 
+    postLink: 'https://instagram.com/p/CxExample1', 
+    status: 'Pending', 
+    timestamp: '10 mins ago', 
+    fraudRisk: 'Low',
+    detectedHandle: '@sarah.lifestyle', 
+    autoVerified: true,
+    expAwarded: 50
+  },
+  { 
+    id: 102, 
+    sidekickName: 'Mike Chen', 
+    sidekickId: 'SK-1012',
+    handle: '@mike_eats',
+    taskId: 1,
+    task: 'Summer Sale Launch', 
+    proofUrl: '#', 
+    postLink: 'https://instagram.com/p/CxExample2', 
+    status: 'Pending', 
+    timestamp: '25 mins ago', 
+    fraudRisk: 'High (IP Match)',
+    detectedHandle: '@unknown_user', 
+    autoVerified: false,
+    expAwarded: 50
+  },
+];
+
+const analyticsData = [
+  { name: 'Mon', engagement: 4000, reach: 2400, cost: 1200 },
+  { name: 'Tue', engagement: 3000, reach: 1398, cost: 900 },
+  { name: 'Wed', engagement: 2000, reach: 9800, cost: 2100 },
+  { name: 'Thu', engagement: 2780, reach: 3908, cost: 1400 },
+  { name: 'Fri', engagement: 1890, reach: 4800, cost: 1100 },
+];
+
+const initialBroadcasts = [
+  { id: 1, senderType: 'Mentor', sender: 'SIDEKICK MENTOR', message: '🔥 Keep pushing! You\'re one task away from the leaderboard.', time: 'Just now', audience: 'All', status: 'Sent' },
+  { id: 2, senderType: 'Admin', sender: 'SYSTEM ADMIN', message: '⚠️ Maintenance scheduled for 3AM. Plan your uploads accordingly.', time: 'Just now', audience: 'All', status: 'Sent' },
+  { id: 3, senderType: 'HQ', sender: 'ADMIN HQ', message: '📢 ALERT: New flash campaign available! Limited slots. Check your feed now!', time: 'Just now', audience: 'VIP', status: 'Sent' },
+  { id: 4, senderType: 'Mentor', sender: 'SIDEKICK MENTOR', message: '🚀 Success is not final, failure is not fatal: it is the courage to continue that counts. Keep grinding!', time: '10m ago', audience: 'Premium', status: 'Sent' },
+  { id: 5, senderType: 'Community', sender: 'COMMUNITY MGR', message: '☕ I told my computer I needed a break, and now it won\'t stop sending me Kit-Kat ads.', time: '1h ago', audience: 'All', status: 'Sent' },
+  { id: 6, senderType: 'Admin', sender: 'SYSTEM ADMIN', message: '⚡ Double EXP Weekend starts this Friday! Prepare your content schedule.', time: '5h ago', audience: 'All', status: 'Sent' },
+];
+
+const systemAlerts = [
+  { id: 1, type: 'warning', message: 'High detailed verification load (45 pending)', time: '20m ago' },
+  { id: 2, type: 'error', message: 'Potential Fraud: Duplicate IP detected for Ava Long & Kai Adams', time: '1h ago' },
+  { id: 3, type: 'info', message: 'Campaign "Summer Sale" reached 90% budget', time: '2h ago' },
+];
+
+// --- Reusable UI Components ---
+
+const Badge = ({ children, color = 'gray' }) => {
+  const colors = {
+    gray: 'bg-[#333] text-gray-300 border border-gray-600',
+    green: 'bg-[#3D4421] text-[#CCFF00] border border-[#CCFF00]/50',
+    blue: 'bg-blue-900/40 text-[#00F0FF] border border-[#00F0FF]/50',
+    yellow: 'bg-yellow-900/40 text-yellow-400 border border-yellow-500/50',
+    red: 'bg-red-900/40 text-red-400 border border-red-500/50',
+    purple: 'bg-purple-900/40 text-purple-400 border border-purple-500/50',
+    gold: 'bg-yellow-600/20 text-yellow-500 border border-yellow-500/50', // For VIP
+  };
+  return (
+    <span className={`px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider ${colors[color] || colors.gray}`}>
+      {children}
+    </span>
+  );
+};
+
+const SettingsInput = ({ label, type = "number", value, onChange, theme }) => (
+  <div className="flex flex-col mb-4">
+    <label className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-1.5`}>{label}</label>
+    <input 
+      type={type} 
+      className={`w-full px-3 py-2 rounded-lg ${theme.input} text-sm font-mono`} 
+      value={value} 
+      onChange={(e) => onChange(type === 'number' ? Number(e.target.value) : e.target.value)} 
+    />
+  </div>
+);
+
+const SettingsToggle = ({ label, checked, onChange, theme }) => (
+  <div className="flex items-center justify-between mb-4 py-2">
+    <span className={`text-xs ${theme.textMuted} uppercase tracking-widest`}>{label}</span>
+    <button 
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={`w-10 h-5 rounded-full relative transition-colors ${checked ? 'bg-[#CCFF00]' : 'bg-gray-600'}`}
+    >
+      <div className={`w-3 h-3 rounded-full bg-white absolute top-1 transition-transform ${checked ? 'left-6 bg-black' : 'left-1'}`} />
+    </button>
+  </div>
+);
+
+const SettingsSlider = ({ label, value, min, max, onChange, theme }) => (
+  <div className="flex flex-col mb-4">
+    <div className="flex justify-between mb-1.5">
+      <label className={`text-xs ${theme.textMuted} uppercase tracking-widest`}>{label}</label>
+      <span className={`text-xs font-mono ${theme.accentLime}`}>{value}</span>
+    </div>
+    <input 
+      type="range" 
+      min={min} 
+      max={max} 
+      value={value} 
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="w-full accent-[#CCFF00] h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+    />
+  </div>
+);
+
+// --- Settings Panels ---
+
+const TierConfigPanel = ({ config, updateSetting, theme }) => (
+  <div className={`p-6 ${theme.card} rounded-2xl mb-6`}>
+    <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider mb-6 flex items-center`}><Award size={18} className={`mr-2 ${theme.accentLime}`}/> Tier Requirements</h3>
+    <div className="grid grid-cols-2 gap-x-6">
+      <SettingsInput theme={theme} label="Tier A Min Followers" value={config.tierA_minFollowers} onChange={(v) => updateSetting('tierConfig', 'tierA_minFollowers', v)} />
+      <SettingsInput theme={theme} label="Tier B Min Followers" value={config.tierB_minFollowers} onChange={(v) => updateSetting('tierConfig', 'tierB_minFollowers', v)} />
+      <SettingsInput theme={theme} label="Tier C Min Followers" value={config.tierC_minFollowers} onChange={(v) => updateSetting('tierConfig', 'tierC_minFollowers', v)} />
+      <SettingsInput theme={theme} label="Tier D Min Followers" value={config.tierD_minFollowers} onChange={(v) => updateSetting('tierConfig', 'tierD_minFollowers', v)} />
+      <SettingsInput theme={theme} label="Tier E Min Followers" value={config.tierE_minFollowers} onChange={(v) => updateSetting('tierConfig', 'tierE_minFollowers', v)} />
+    </div>
+    <div className={`border-t ${theme.borderColor} pt-4 mt-2`}>
+      <SettingsToggle theme={theme} label="Auto Promotion Engine" checked={config.autoPromotion} onChange={(v) => updateSetting('tierConfig', 'autoPromotion', v)} />
+      <SettingsToggle theme={theme} label="Auto Downgrade Engine" checked={config.autoDowngrade} onChange={(v) => updateSetting('tierConfig', 'autoDowngrade', v)} />
+    </div>
+  </div>
+);
+
+const VipConfigPanel = ({ config, updateSetting, theme }) => (
+  <div className={`p-6 ${theme.card} rounded-2xl mb-6`}>
+    <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider mb-6 flex items-center`}><Crown size={18} className={`mr-2 text-yellow-500`}/> VIP Protocol</h3>
+    <div className="grid grid-cols-2 gap-x-6">
+      <SettingsInput theme={theme} label="Campaigns Required" value={config.campaignsRequired} onChange={(v) => updateSetting('vipConfig', 'campaignsRequired', v)} />
+      <SettingsInput theme={theme} label="Referrals Required" value={config.referralRequired} onChange={(v) => updateSetting('vipConfig', 'referralRequired', v)} />
+      <SettingsInput theme={theme} label="VIP Duration (Days)" value={config.vipDurationDays} onChange={(v) => updateSetting('vipConfig', 'vipDurationDays', v)} />
+      <SettingsInput theme={theme} label="VIP Fee (If Applicable)" value={config.vipFee} onChange={(v) => updateSetting('vipConfig', 'vipFee', v)} />
+    </div>
+    <div className={`border-t ${theme.borderColor} pt-4 mt-2`}>
+      <SettingsToggle theme={theme} label="Auto Renewal Processing" checked={config.autoRenewal} onChange={(v) => updateSetting('vipConfig', 'autoRenewal', v)} />
+      <SettingsToggle theme={theme} label="Priority Campaign Access" checked={config.priorityAccess} onChange={(v) => updateSetting('vipConfig', 'priorityAccess', v)} />
+    </div>
+  </div>
+);
+
+const CampaignConfigPanel = ({ config, updateSetting, theme }) => (
+  <div className={`p-6 ${theme.card} rounded-2xl mb-6`}>
+    <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider mb-6 flex items-center`}><Megaphone size={18} className={`mr-2 ${theme.accentBlue}`}/> Campaign Defaults</h3>
+    <div className="grid grid-cols-2 gap-x-6">
+      <SettingsInput theme={theme} label="Default EXP Reward" value={config.defaultExpReward} onChange={(v) => updateSetting('campaignConfig', 'defaultExpReward', v)} />
+      <SettingsInput theme={theme} label="Max Campaign Size" value={config.maxCampaignSize} onChange={(v) => updateSetting('campaignConfig', 'maxCampaignSize', v)} />
+      <SettingsInput theme={theme} label="Min Payout Limit" value={config.minPayout} onChange={(v) => updateSetting('campaignConfig', 'minPayout', v)} />
+      <SettingsInput theme={theme} label="Max Payout Limit" value={config.maxPayout} onChange={(v) => updateSetting('campaignConfig', 'maxPayout', v)} />
+      <SettingsInput theme={theme} label="Task Expiry (Days)" value={config.taskExpiryDays} onChange={(v) => updateSetting('campaignConfig', 'taskExpiryDays', v)} />
+    </div>
+    <div className={`border-t ${theme.borderColor} pt-4 mt-2`}>
+        <SettingsSlider theme={theme} label="Auto Approval Confidence" min={0} max={100} value={config.autoApprovalThreshold} onChange={(v) => updateSetting('campaignConfig', 'autoApprovalThreshold', v)} />
+        <SettingsSlider theme={theme} label="Auto Reject Threshold" min={0} max={100} value={config.autoRejectThreshold} onChange={(v) => updateSetting('campaignConfig', 'autoRejectThreshold', v)} />
+    </div>
+  </div>
+);
+
+const RewardConfigPanel = ({ config, updateSetting, theme }) => (
+  <div className={`p-6 ${theme.card} rounded-2xl mb-6`}>
+    <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider mb-6 flex items-center`}><Trophy size={18} className={`mr-2 text-purple-500`}/> Reward Engine</h3>
+    <div className="grid grid-cols-2 gap-x-6">
+      <SettingsInput theme={theme} label="Base EXP Per Task" value={config.expPerTaskDefault} onChange={(v) => updateSetting('rewardConfig', 'expPerTaskDefault', v)} />
+      <SettingsInput theme={theme} label="Global EXP Multiplier" value={config.expMultiplier} onChange={(v) => updateSetting('rewardConfig', 'expMultiplier', v)} />
+      <SettingsInput theme={theme} label="Reward Conv. Rate" value={config.rewardConversionRate} onChange={(v) => updateSetting('rewardConfig', 'rewardConversionRate', v)} />
+      
+      <div className="flex flex-col mb-4">
+        <label className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-1.5`}>Ladder Reset Freq</label>
+        <select 
+            className={`w-full px-3 py-2 rounded-lg ${theme.input} text-sm font-mono`} 
+            value={config.leaderboardResetFrequency} 
+            onChange={(e) => updateSetting('rewardConfig', 'leaderboardResetFrequency', e.target.value)}
+        >
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+        </select>
+      </div>
+    </div>
+    <div className={`border-t ${theme.borderColor} pt-4 mt-2`}>
+      <SettingsToggle theme={theme} label="EXP Decay (Inactive Users)" checked={config.expDecayEnabled} onChange={(v) => updateSetting('rewardConfig', 'expDecayEnabled', v)} />
+      <SettingsToggle theme={theme} label="Bonus EXP Weekends" checked={config.bonusWeekendEnabled} onChange={(v) => updateSetting('rewardConfig', 'bonusWeekendEnabled', v)} />
+    </div>
+  </div>
+);
+
+const FraudConfigPanel = ({ config, updateSetting, theme }) => (
+  <div className={`p-6 ${theme.card} rounded-2xl mb-6`}>
+    <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider mb-6 flex items-center`}><ShieldAlert size={18} className={`mr-2 text-red-500`}/> Fraud Prevention</h3>
+    <SettingsSlider theme={theme} label="Duplicate IP Sensitivity" min={0} max={100} value={config.duplicateIpSensitivity} onChange={(v) => updateSetting('fraudConfig', 'duplicateIpSensitivity', v)} />
+    <SettingsSlider theme={theme} label="Fake Follower Threshold" min={0} max={100} value={config.fakeFollowerThreshold} onChange={(v) => updateSetting('fraudConfig', 'fakeFollowerThreshold', v)} />
+    <SettingsSlider theme={theme} label="Auto-Flag Threshold" min={0} max={100} value={config.autoFlagThreshold} onChange={(v) => updateSetting('fraudConfig', 'autoFlagThreshold', v)} />
+    <SettingsSlider theme={theme} label="Manual Review Required" min={0} max={100} value={config.manualReviewThreshold} onChange={(v) => updateSetting('fraudConfig', 'manualReviewThreshold', v)} />
+    <SettingsInput theme={theme} label="Risk Score Weight Factor" value={config.riskScoreWeight} onChange={(v) => updateSetting('fraudConfig', 'riskScoreWeight', v)} />
+  </div>
+);
+
+const PaymentConfigPanel = ({ config, updateSetting, theme }) => (
+  <div className={`p-6 ${theme.card} rounded-2xl mb-6`}>
+    <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider mb-6 flex items-center`}><Wallet size={18} className={`mr-2 text-emerald-500`}/> Payment Gateway</h3>
+    <div className="grid grid-cols-2 gap-x-6">
+      <div className="flex flex-col mb-4">
+        <label className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-1.5`}>Primary Provider</label>
+        <select className={`w-full px-3 py-2 rounded-lg ${theme.input} text-sm font-mono`} value={config.provider} onChange={(e) => updateSetting('paymentConfig', 'provider', e.target.value)}>
+            <option value="TNG">TNG eWallet</option>
+            <option value="DuitNow">DuitNow</option>
+            <option value="Bank">Bank Transfer</option>
+        </select>
+      </div>
+      <div className="flex flex-col mb-4">
+        <label className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-1.5`}>Currency</label>
+        <select className={`w-full px-3 py-2 rounded-lg ${theme.input} text-sm font-mono`} value={config.currency} onChange={(e) => updateSetting('paymentConfig', 'currency', e.target.value)}>
+            <option value="MYR">MYR (Ringgit)</option>
+            <option value="SGD">SGD (Dollar)</option>
+            <option value="USD">USD (Dollar)</option>
+        </select>
+      </div>
+      <SettingsInput theme={theme} label="Min Payout Threshold" value={config.minPayout} onChange={(v) => updateSetting('paymentConfig', 'minPayout', v)} />
+      <SettingsInput theme={theme} label="Payment Delay (Days)" value={config.paymentDelayDays} onChange={(v) => updateSetting('paymentConfig', 'paymentDelayDays', v)} />
+    </div>
+    <div className={`border-t ${theme.borderColor} pt-4 mt-2`}>
+      <SettingsToggle theme={theme} label="Enable Auto-Payout via API" checked={config.autoPayoutEnabled} onChange={(v) => updateSetting('paymentConfig', 'autoPayoutEnabled', v)} />
+    </div>
+  </div>
+);
+
+const AiEngineConfigPanel = ({ config, updateSetting, theme }) => (
+  <div className={`p-6 ${theme.card} rounded-2xl mb-6`}>
+    <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider mb-6 flex items-center`}><Bot size={18} className={`mr-2 ${theme.accentBlue}`}/> AI Assignment Engine</h3>
+    <div className="grid grid-cols-2 gap-x-6">
+      <SettingsInput theme={theme} label="Performance Weight" value={config.performanceWeight} onChange={(v) => updateSetting('aiEngineConfig', 'performanceWeight', v)} />
+      <SettingsInput theme={theme} label="ROI History Weight" value={config.roiWeight} onChange={(v) => updateSetting('aiEngineConfig', 'roiWeight', v)} />
+      <SettingsInput theme={theme} label="Risk Weight Penalty" value={config.riskWeight} onChange={(v) => updateSetting('aiEngineConfig', 'riskWeight', v)} />
+      <SettingsInput theme={theme} label="Confidence Threshold (%)" value={config.assignmentConfidenceThreshold} onChange={(v) => updateSetting('aiEngineConfig', 'assignmentConfidenceThreshold', v)} />
+    </div>
+    <div className={`border-t ${theme.borderColor} pt-4 mt-2`}>
+      <SettingsToggle theme={theme} label="Auto-Assign Campaigns" checked={config.autoAssignmentEnabled} onChange={(v) => updateSetting('aiEngineConfig', 'autoAssignmentEnabled', v)} />
+    </div>
+  </div>
+);
+
+
+const SystemSettingsPanel = ({ theme, onShowNotification }) => {
+    const { settings, updateSetting, resetSettings } = useSystemSettings();
+
+    const handleSave = () => {
+        // Simulation of save logic
+        onShowNotification('System settings securely synced and saved.', 'success');
+    };
+
+    return (
+        <div className="max-w-7xl mx-auto flex flex-col h-full">
+            <div className={`flex justify-between items-center mb-6`}>
+                <div>
+                    <h2 className={`text-2xl font-anton ${theme.textMain}`}>System Core Settings</h2>
+                    <p className={`text-xs ${theme.textMuted} uppercase tracking-widest`}>Global variables and engine configurations</p>
+                </div>
+                <div className="flex gap-4">
+                    <button onClick={resetSettings} className={`${theme.btnGhost} px-4 py-2 rounded-lg flex items-center text-xs font-bold uppercase`}>
+                        <RotateCcw size={14} className="mr-2" /> Reset Defaults
+                    </button>
+                    <button onClick={handleSave} className={`${theme.btnPrimary} px-6 py-2 rounded-lg flex items-center text-xs shadow-[0_0_15px_rgba(204,255,0,0.2)]`}>
+                        <Save size={14} className="mr-2" /> Commit Changes
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 overflow-y-auto pb-10">
+                <div className="space-y-6">
+                    <TierConfigPanel config={settings.tierConfig} updateSetting={updateSetting} theme={theme} />
+                    <CampaignConfigPanel config={settings.campaignConfig} updateSetting={updateSetting} theme={theme} />
+                    <PaymentConfigPanel config={settings.paymentConfig} updateSetting={updateSetting} theme={theme} />
+                </div>
+                <div className="space-y-6">
+                    <VipConfigPanel config={settings.vipConfig} updateSetting={updateSetting} theme={theme} />
+                    <RewardConfigPanel config={settings.rewardConfig} updateSetting={updateSetting} theme={theme} />
+                    <FraudConfigPanel config={settings.fraudConfig} updateSetting={updateSetting} theme={theme} />
+                    <AiEngineConfigPanel config={settings.aiEngineConfig} updateSetting={updateSetting} theme={theme} />
+                </div>
+            </div>
+        </div>
+    )
+};
+
+
+const IntelCenter = ({ theme, analyticsData, systemAlerts, isDarkMode, onShowNotification }) => {
+    const [activeTab, setActiveTab] = useState('analytics');
+
+    return (
+        <div className="h-[calc(100vh-8rem)] flex flex-col">
+            <div className="flex gap-4 mb-6 border-b border-gray-700/50 pb-2">
+                <button 
+                    onClick={() => setActiveTab('analytics')}
+                    className={`text-sm font-bold uppercase tracking-widest px-4 py-2 rounded-t-lg transition-colors ${activeTab === 'analytics' ? `text-[#CCFF00] border-b-2 border-[#CCFF00]` : `${theme.textMuted} hover:${theme.textMain}`}`}
+                >
+                    Analytics Dashboard
+                </button>
+                <button 
+                    onClick={() => setActiveTab('settings')}
+                    className={`text-sm font-bold uppercase tracking-widest px-4 py-2 rounded-t-lg transition-colors ${activeTab === 'settings' ? `text-[#CCFF00] border-b-2 border-[#CCFF00]` : `${theme.textMuted} hover:${theme.textMain}`}`}
+                >
+                    System Settings
+                </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden">
+                {activeTab === 'analytics' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+                       <div className={`lg:col-span-2 ${theme.card} p-6 rounded-2xl flex flex-col`}>
+                          <div className="flex justify-between items-center mb-6">
+                              <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider`}>Engagement Velocity</h3>
+                              <Badge color="green">+12% vs LW</Badge>
+                          </div>
+                          <div className="flex-1 min-h-0">
+                             <ResponsiveContainer width="100%" height="100%">
+                               <LineChart data={analyticsData}>
+                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#333" : "#e5e7eb"} />
+                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: isDarkMode ? '#666' : '#9ca3af', fontSize: 10}} />
+                                 <YAxis axisLine={false} tickLine={false} tick={{fill: isDarkMode ? '#666' : '#9ca3af', fontSize: 10}} />
+                                 <Tooltip contentStyle={{backgroundColor: isDarkMode ? '#111' : '#fff', border: `1px solid ${isDarkMode ? '#333' : '#e5e7eb'}`, color: isDarkMode ? '#fff' : '#000'}} itemStyle={{color: '#CCFF00'}} />
+                                 <Line type="monotone" dataKey="reach" stroke="#CCFF00" strokeWidth={3} dot={{r:4, fill: isDarkMode ? '#111' : '#fff', strokeWidth: 2}} activeDot={{r:6, fill: '#CCFF00'}} />
+                               </LineChart>
+                             </ResponsiveContainer>
+                          </div>
+                       </div>
+                       <div className={`${theme.card} p-6 rounded-2xl overflow-auto`}>
+                          <h3 className={`font-bold ${theme.textMain} mb-4 flex items-center uppercase tracking-wider`}>
+                              <ShieldAlert size={18} className="mr-2 text-red-500"/> Threat Monitor
+                          </h3>
+                          <div className="space-y-3">
+                            {systemAlerts.map(alert => (
+                               <div key={alert.id} className={`p-4 rounded border text-xs leading-relaxed ${alert.type === 'error' ? 'bg-red-900/10 border-red-900/30 text-red-400' : 'bg-yellow-900/10 border-yellow-900/30 text-yellow-600'}`}>
+                                  <span className="font-bold block mb-1 uppercase tracking-wider">{alert.type} DETECTED</span>
+                                  {alert.message}
+                                  <div className="text-[10px] opacity-60 mt-2 font-mono">{alert.time}</div>
+                               </div>
+                            ))}
+                          </div>
+                       </div>
+                    </div>
+                )}
+
+                {activeTab === 'settings' && (
+                    <SystemSettingsPanel theme={theme} onShowNotification={onShowNotification} />
+                )}
+            </div>
+        </div>
+    )
+};
+
+
+// --- Original Modules ---
+
+const BroadcastCenter = ({ broadcasts, onSend, theme, isDarkMode }) => {
+    const [form, setForm] = useState({
+        senderType: 'Admin HQ',
+        audience: 'All Sidekicks',
+        message: '',
+        scheduleType: 'Now',
+        scheduledDate: ''
+    });
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSend(form);
+        setForm({...form, message: '', scheduledDate: '', scheduleType: 'Now'});
+    };
+
+    const getSenderStyles = (type) => {
+        switch(type) {
+            case 'Mentor': return { icon: <Zap size={14} className="text-[#CCFF00]"/>, text: 'text-[#CCFF00]', border: 'border-[#CCFF00]' };
+            case 'Admin': return { icon: <ShieldCheck size={14} className="text-blue-400"/>, text: 'text-blue-400', border: 'border-[#CCFF00]' }; 
+            case 'HQ': return { icon: <Megaphone size={14} className="text-blue-400"/>, text: 'text-blue-400', border: 'border-[#CCFF00]' };
+            case 'Community': return { icon: <MessageCircle size={14} className="text-pink-400"/>, text: 'text-pink-400', border: 'border-pink-500/30' };
+            default: return { icon: <Radio size={14} className="text-gray-400"/>, text: 'text-gray-400', border: 'border-gray-500/30' };
+        }
+    };
+
+    return (
+        <div className="flex gap-6 h-[calc(100vh-8rem)]">
+            <div className={`w-1/2 ${theme.card} rounded-2xl flex flex-col overflow-hidden`}>
+                <div className={`p-6 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+                    <div>
+                        <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>New Transmission</h3>
+                        <p className="text-[10px] text-gray-500">Broadcast messages to Sidekicks</p>
+                    </div>
+                </div>
+                <form onSubmit={handleSubmit} className="p-6 flex-1 overflow-y-auto space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Sender Identity</label>
+                            <select className={`w-full px-4 py-3 rounded-lg ${theme.input}`} value={form.senderType} onChange={e => setForm({...form, senderType: e.target.value})}>
+                                <option>Admin HQ</option>
+                                <option>System Admin</option>
+                                <option>Sidekick Mentor</option>
+                                <option>Community Mgr</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Target Audience</label>
+                            <select className={`w-full px-4 py-3 rounded-lg ${theme.input}`} value={form.audience} onChange={e => setForm({...form, audience: e.target.value})}>
+                                <option>All Sidekicks</option>
+                                <option>VIP Only</option>
+                                <option>Premium Only</option>
+                                <option>Tier A Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                         <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Message Content</label>
+                         <textarea required rows="4" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} placeholder="Enter broadcast message..." value={form.message} onChange={e => setForm({...form, message: e.target.value})} />
+                    </div>
+
+                    <div className={`p-4 rounded-xl border ${theme.borderColor} ${isDarkMode ? 'bg-[#111]' : 'bg-gray-50'}`}>
+                        <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-4`}>Deployment Schedule</label>
+                        <div className="flex gap-4 mb-4">
+                            <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="schedule" className="mr-2 accent-[#CCFF00]" checked={form.scheduleType === 'Now'} onChange={() => setForm({...form, scheduleType: 'Now'})} />
+                                <span className="text-sm font-bold">Send Now</span>
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                                <input type="radio" name="schedule" className="mr-2 accent-[#CCFF00]" checked={form.scheduleType === 'Later'} onChange={() => setForm({...form, scheduleType: 'Later'})} />
+                                <span className="text-sm font-bold">Schedule</span>
+                            </label>
+                        </div>
+                        {form.scheduleType === 'Later' && (
+                            <input type="datetime-local" className={`w-full px-4 py-2 rounded-lg ${theme.input} text-sm`} value={form.scheduledDate} onChange={e => setForm({...form, scheduledDate: e.target.value})} required/>
+                        )}
+                    </div>
+
+                    <button type="submit" className={`w-full ${theme.btnPrimary} py-4 rounded-xl flex items-center justify-center text-sm shadow-lg hover:scale-[1.02] transition-transform`}>
+                        {form.scheduleType === 'Now' ? <Send size={18} className="mr-2"/> : <Clock size={18} className="mr-2"/>}
+                        {form.scheduleType === 'Now' ? 'BROADCAST NOW' : 'SCHEDULE TRANSMISSION'}
+                    </button>
+                </form>
+            </div>
+
+            <div className={`w-1/2 ${theme.card} rounded-2xl flex flex-col overflow-hidden bg-[#111]`}>
+                <div className={`p-6 border-b border-white/10 bg-[#1A1A1A] flex justify-between items-center`}>
+                    <div className="flex items-center gap-3">
+                        <MessageCircle className="text-[#CCFF00]" size={24}/>
+                        <div>
+                            <h3 className={`font-bold text-white uppercase tracking-wider text-lg leading-tight`}>HQ Broadcasts</h3>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Official Comms & Motivation</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#111]">
+                    {broadcasts.map(b => {
+                        const styles = getSenderStyles(b.senderType);
+                        return (
+                            <div key={b.id} className="mb-4">
+                                <div className="flex items-center justify-between mb-1 px-1">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-6 h-6 rounded-full border border-white/20 flex items-center justify-center bg-[#1A1A1A]`}>
+                                            {styles.icon}
+                                        </div>
+                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${styles.text}`}>{b.sender}</span>
+                                    </div>
+                                    <span className="text-[9px] text-gray-600 font-mono uppercase">{b.time}</span>
+                                </div>
+                                <div className={`ml-3 mt-1 p-4 rounded-xl border ${b.senderType === 'Community' ? 'border-pink-500/30' : 'border-[#CCFF00]'} bg-[#1A1A1A] text-sm text-gray-200 leading-relaxed shadow-lg`}>
+                                    {b.message}
+                                </div>
+                            </div>
+                        )
+                    })}
+                    <div className="pt-8 pb-4 text-center">
+                        <span className="text-[10px] text-gray-600 uppercase tracking-[0.2em] font-bold">End of Transmission</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const RegistrationQueue = ({ registrations, onApprove, onReject, theme }) => {
+  const [selected, setSelected] = useState(null);
+  const [verifiedProfiles, setVerifiedProfiles] = useState({}); 
+  const [verifyingId, setVerifyingId] = useState(null);
+  const { settings } = useSystemSettings();
+
+  useEffect(() => {
+    if (registrations.length > 0 && !selected) setSelected(registrations[0]);
+    if (registrations.length === 0) setSelected(null);
+  }, [registrations, selected]);
+
+  const isProfileVerified = (regId, index) => {
+      if (registrations.find(r => r.id === regId)?.verificationStatus === 'Verified') return true;
+      return verifiedProfiles[regId] && verifiedProfiles[regId].includes(index);
+  };
+
+  const handleVerifyProfile = (regId, index) => {
+    setVerifyingId(index);
+    setTimeout(() => {
+        setVerifiedProfiles(prev => {
+            const currentList = prev[regId] || [];
+            if(currentList.includes(index)) return prev;
+            return { ...prev, [regId]: [...currentList, index] };
+        });
+        setVerifyingId(null);
+        if (selected && selected.id === regId) {
+             selected.verificationStatus = 'Verified'; 
+        }
+    }, 1200);
+  };
+
+  if (registrations.length === 0) return (
+    <div className="flex flex-col items-center justify-center h-full text-gray-500">
+      <UserPlus size={64} className="mb-4 opacity-20" />
+      <p className="text-xl font-medium font-anton uppercase">No Pending Registrations</p>
+    </div>
+  );
+
+  const primaryProfile = selected ? selected.socialProfiles.reduce((prev, current) => (prev.followers > current.followers) ? prev : current) : null;
+  const calculatedTier = primaryProfile ? calculateTier(primaryProfile.followers, settings.tierConfig) : 'E';
+  const totalFollowers = selected ? selected.socialProfiles.reduce((acc, curr) => acc + curr.followers, 0) : 0;
+
+  return (
+    <div className="h-[calc(100vh-8rem)] flex gap-6">
+      <div className={`w-1/3 ${theme.card} rounded-2xl flex flex-col overflow-hidden`}>
+        <div className={`p-4 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+          <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>Pending Sidekicks ({registrations.length})</h3>
+        </div>
+        <div className="flex-1 overflow-auto divide-y divide-white/5">
+          {registrations.map(reg => {
+            const mainProfile = reg.socialProfiles.reduce((prev, current) => (prev.followers > current.followers) ? prev : current);
+            return (
+              <div 
+                key={reg.id} 
+                onClick={() => setSelected(reg)}
+                className={`p-4 cursor-pointer transition-colors border-l-4 ${selected?.id === reg.id ? 'bg-[#CCFF00]/10 border-[#CCFF00]' : `${theme.tableRowHover} border-transparent`}`}
+              >
+                <div className="flex justify-between items-center mb-1">
+                  <span className={`font-bold ${theme.textMain}`}>{reg.name}</span>
+                  <span className="text-xs text-gray-500 font-mono">{reg.submittedAt}</span>
+                </div>
+                <p className={`text-sm ${theme.textMuted} mb-2 truncate`}>{mainProfile.handle}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                   <Badge color="blue">{mainProfile.platform}</Badge>
+                   {reg.socialProfiles.length > 1 && (
+                     <span className="text-[10px] bg-[#333] px-2 py-0.5 rounded text-gray-400">+{reg.socialProfiles.length - 1} more</span>
+                   )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className={`flex-1 ${theme.card} rounded-2xl p-8 flex flex-col overflow-y-auto`}>
+        {selected ? (
+          <>
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h2 className={`text-4xl ${theme.textMain} mb-1 tracking-wide`}>{selected.name}</h2>
+                <div className="flex flex-col gap-1.5 mt-2">
+                  <p className={`${theme.textMuted} uppercase tracking-wider text-xs font-bold`}>Applying for <span className={`${theme.accentLime}`}>Sidekick Account</span></p>
+                  <div className="flex items-center text-sm text-gray-400 font-mono">
+                    <div className="bg-[#333] p-1.5 rounded mr-3">
+                       <Phone size={14} className="text-[#CCFF00]"/>
+                    </div>
+                    {selected.contactNumber}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => onReject(selected.id)} className={`${theme.btnGhost} border border-red-500/50 text-red-500 hover:bg-red-500/10 px-8 py-2.5 rounded-full flex items-center font-bold tracking-wider text-xs transition-all`}>
+                  <XCircle size={16} className="mr-2" /> REJECT
+                </button>
+                <button 
+                    disabled={selected.verificationStatus !== 'Verified'}
+                    onClick={() => onApprove(selected)} 
+                    className={`px-8 py-2.5 rounded-full shadow-lg flex items-center transition-all font-bold tracking-wider text-xs ${selected.verificationStatus === 'Verified' ? theme.btnPrimary : 'bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-600'}`}
+                >
+                  <CheckCircle size={16} className="mr-2" /> APPROVE
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              {/* Left Column: Socials & Verification */}
+              <div className="space-y-6">
+                <div className={`flex items-center justify-between border-b ${theme.borderColor} pb-2 mb-2`}>
+                    <h4 className={`text-xs ${theme.textMuted} uppercase tracking-widest`}>Social Profiles</h4>
+                    <span className="text-[10px] text-gray-500">{selected.socialProfiles.length} LINKED</span>
+                </div>
+                
+                {selected.socialProfiles.map((profile, idx) => {
+                  const isVerified = isProfileVerified(selected.id, idx);
+                  return (
+                    <div key={idx} className={`p-5 rounded-xl border ${theme.borderColor} ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-gray-50'} relative overflow-hidden group hover:border-[#CCFF00]/50 transition-all flex flex-col gap-4`}>
+                       <div className="flex items-center gap-2 text-gray-400">
+                          <Globe size={14} className={`${theme.accentLime}`}/>
+                          <span className={`${theme.textMain} font-bold tracking-wide uppercase text-xs`}>{profile.platform}</span>
+                       </div>
+
+                       <div className={`${theme.bg === 'bg-[#1A1A1A]' ? 'bg-black/40 border-white/10' : 'bg-white border-gray-200'} border rounded-lg p-3 flex items-center justify-center group-hover:border-[#CCFF00]/30 transition-colors`}>
+                          <a href={profile.url} target="_blank" rel="noreferrer" className={`${theme.accentBlue} hover:underline font-mono text-sm truncate`}>
+                            {profile.handle}
+                          </a>
+                       </div>
+
+                       <div className="flex items-baseline gap-2 px-1">
+                          <span className={`text-3xl ${theme.textMain} font-anton tracking-wide block`}>{profile.followers.toLocaleString()}</span>
+                          <span className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Followers</span>
+                       </div>
+
+                       <div className="pt-2 mt-auto">
+                           {isVerified ? (
+                               <div className="w-full py-3 bg-[#CCFF00]/10 border border-[#CCFF00]/50 rounded-lg flex items-center justify-center text-[#CCFF00] text-xs font-bold uppercase tracking-wider">
+                                  <CheckCircle size={14} className="mr-2"/> Verified
+                               </div>
+                           ) : (
+                               <button 
+                                onClick={() => handleVerifyProfile(selected.id, idx)}
+                                disabled={verifyingId === idx}
+                                className={`w-full py-3 ${theme.btnSecondary} rounded-lg flex items-center justify-center text-xs tracking-wider font-bold`}
+                               >
+                                   {verifyingId === idx ? <RefreshCw className="animate-spin mr-2" size={14}/> : <ShieldAlert className="mr-2" size={14}/>}
+                                   {verifyingId === idx ? 'CHECKING...' : 'VERIFY EXISTENCE'}
+                               </button>
+                           )}
+                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="space-y-6">
+                <div className={`p-6 rounded-xl ${theme.cardSecondary}`}>
+                  <h4 className={`text-xs ${theme.accentLime} uppercase tracking-widest mb-4`}>System Analysis</h4>
+                  <div className="mb-6">
+                    <span className={`text-xs ${theme.textMain} block mb-1 uppercase tracking-wider font-bold`}>Recommended Tier</span>
+                    <span className={`text-6xl ${theme.accentLime} font-anton tracking-wide`}>TIER {calculatedTier}</span>
+                  </div>
+                  <div className={`space-y-2 border-t ${theme.borderColor} pt-4`}>
+                     <div className="flex justify-between text-xs">
+                        <span className={`${theme.accentLime} opacity-80 uppercase`}>Highest Reach</span>
+                        <span className={`${theme.textMain} font-mono`}>{primaryProfile.followers.toLocaleString()}</span>
+                     </div>
+                     <div className="flex justify-between text-xs">
+                        <span className={`${theme.accentLime} opacity-80 uppercase`}>Total Reach</span>
+                        <span className={`${theme.textMain} font-mono`}>{totalFollowers.toLocaleString()}</span>
+                     </div>
+                     <div className="flex justify-between text-xs mt-2">
+                        <span className={`${theme.accentLime} opacity-80 uppercase`}>Eligibility</span>
+                        <span className={`${theme.accentLime} font-bold uppercase`}>Confirmed</span>
+                     </div>
+                  </div>
+                </div>
+
+                <div className={`p-5 rounded-xl border ${theme.borderColor} ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-gray-50'} relative overflow-hidden group hover:border-[#CCFF00]/50 transition-all`}>
+                    <div className={`flex justify-between items-center mb-4 border-b ${theme.borderColor} pb-2`}>
+                        <h4 className={`text-xs ${theme.textMuted} uppercase tracking-widest flex items-center`}>
+                           <TrendingUp size={14} className={`mr-2 ${theme.accentLime}`}/> Highlight Post
+                        </h4>
+                        <ArrowUpRight size={14} className="text-gray-500 group-hover:text-[#CCFF00] transition-colors"/>
+                    </div>
+                    
+                    <div className="flex gap-4">
+                       <div className={`w-20 h-20 rounded-lg flex items-center justify-center flex-shrink-0 border ${theme.borderColor} ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-gray-800' : 'bg-white'} group-hover:border-[#CCFF00]/30 transition-colors`}>
+                          {selected.highlightPost.type === 'Video' ? <div className="w-8 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center"><div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[8px] border-l-gray-400 border-b-[4px] border-b-transparent ml-1"></div></div> : <Smartphone size={24} className="text-gray-400"/>}
+                       </div>
+                       
+                       <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                          <div>
+                             <Badge color="blue">{selected.highlightPost.type}</Badge>
+                          </div>
+                          
+                          <div className={`flex items-center gap-4 text-sm font-mono ${theme.textMuted}`}>
+                             <div className="flex items-center gap-1.5 text-xs">
+                                <Heart size={14} className="text-red-500"/> 
+                                <span className={theme.textMain}>{selected.highlightPost.likes.toLocaleString()}</span>
+                             </div>
+                             <div className="flex items-center gap-1.5 text-xs">
+                                <MessageCircle size={14} className="text-blue-500"/> 
+                                <span className={theme.textMain}>{selected.highlightPost.comments.toLocaleString()}</span>
+                             </div>
+                          </div>
+                          
+                           <a href={selected.highlightPost.url} target="_blank" rel="noreferrer" className={`text-[10px] ${theme.textMuted} hover:${theme.accentLime} truncate transition-colors flex items-center mt-1`}>
+                                <LinkIcon size={10} className="mr-1"/> {selected.highlightPost.url}
+                           </a>
+                       </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className={`rounded-xl border-2 border-dashed ${theme.borderColor} p-6 flex items-center justify-center relative overflow-hidden group h-40 transition-colors hover:border-[#CCFF00]/30 hover:bg-[#CCFF00]/5 cursor-pointer`}>
+                <div className="text-center z-10">
+                    <div className="flex items-center justify-center gap-3 text-gray-500 mb-3 group-hover:text-[#CCFF00] transition-colors">
+                       <Smartphone size={24}/>
+                       <FileText size={24}/>
+                    </div>
+                    <p className="text-gray-500 uppercase text-xs tracking-widest font-bold mb-1 group-hover:text-current transition-colors">Verification Evidence</p>
+                    <span className={`${theme.accentBlue} text-xs font-mono group-hover:underline`}>screenshot_asset_001.jpg</span>
+                </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500 uppercase tracking-widest text-sm">Select an applicant from list</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ApprovalQueue = ({ items, onApprove, onReject, theme }) => {
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    if (items.length > 0 && !items.find(i => i.id === selected?.id)) {
+      setSelected(items[0]);
+    } else if (items.length === 0) {
+      setSelected(null);
+    }
+  }, [items, selected]);
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-gray-500">
+        <CheckSquare size={64} className="mb-4 opacity-20" />
+        <p className="text-xl font-medium font-anton uppercase">All Systems Clear</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-[calc(100vh-8rem)] flex gap-6">
+      <div className={`w-1/3 ${theme.card} rounded-2xl flex flex-col overflow-hidden`}>
+        <div className={`p-4 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+          <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>Verification Queue</h3>
+          <span className={`text-xs ${theme.accentLime} font-mono`}>{items.length} PENDING</span>
+        </div>
+        <div className="flex-1 overflow-auto divide-y divide-white/5">
+          {items.map(item => (
+            <div 
+              key={item.id} 
+              onClick={() => setSelected(item)}
+              className={`p-4 cursor-pointer transition-colors border-l-4 ${selected?.id === item.id ? 'bg-[#CCFF00]/10 border-[#CCFF00]' : `${theme.tableRowHover} border-transparent`}`}
+            >
+              <div className="flex justify-between items-start mb-1">
+                <span className={`font-bold ${theme.textMain}`}>{item.sidekickName}</span>
+                <span className="text-xs text-gray-500 font-mono">{item.timestamp}</span>
+              </div>
+              <p className={`text-sm ${theme.textMuted} truncate mb-2`}>{item.task}</p>
+              <div className="flex items-center justify-between">
+                 {item.autoVerified ? (
+                    <Badge color="green">Auto-Verified</Badge>
+                 ) : (
+                    <Badge color="yellow">Manual Check</Badge>
+                 )}
+                 {item.expAwarded && <Badge color="purple">+{item.expAwarded} EXP</Badge>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Right Detail Panel logic */}
+      <div className={`flex-1 ${theme.card} rounded-2xl flex flex-col overflow-hidden`}>
+        {selected ? (
+          <>
+             <div className={`p-8 border-b ${theme.borderColor} flex justify-between items-center ${theme.bg}`}>
+                <div className="flex-1 pr-8">
+                   <h2 className={`text-4xl ${theme.textMain} font-anton tracking-wide leading-tight`}>{selected.task}</h2>
+                   <div className="flex items-center gap-2 mt-2">
+                       <span className={`${theme.textMuted} text-xs uppercase tracking-widest`}>Submitted by</span>
+                       <span className={`${theme.accentBlue} font-bold text-sm`}>{selected.sidekickName}</span>
+                       <span className={`${theme.accentLime} font-mono text-xs ml-2`}>+{selected.expAwarded} EXP Reward</span>
+                   </div>
+                </div>
+                <div className="flex flex-col gap-3 items-end">
+                    <button 
+                      onClick={() => onApprove(selected.id, selected.taskId, selected.expAwarded, selected.sidekickId)}
+                      className={`${theme.btnPrimary} w-36 py-3 rounded-full flex items-center justify-center text-xs font-bold tracking-wider`}
+                    >
+                      <CheckCircle size={18} className="mr-2" /> PAY & AWARD
+                    </button>
+                    <button onClick={() => onReject(selected.id)} className={`${theme.btnGhost} w-36 border border-red-500/40 text-red-500 py-3 rounded-full flex items-center justify-center uppercase text-xs font-bold tracking-wider`}>
+                       REJECT
+                    </button>
+                </div>
+             </div>
+             <div className={`flex-1 p-8 overflow-auto ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
+                 <div className="grid grid-cols-2 gap-8">
+                     {/* Screenshot and details */}
+                     <div className={`aspect-[9/16] w-full ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-gray-100'} rounded-2xl border ${theme.borderColor} flex items-center justify-center`}>
+                        <div className="text-center">
+                            <Smartphone className="mx-auto h-16 w-16 text-gray-500 mb-3" />
+                            <p className="text-gray-500 text-xs uppercase font-bold">Screenshot Preview</p>
+                        </div>
+                     </div>
+                     <div className="space-y-6">
+                        <div className={`p-4 rounded-xl border ${theme.borderColor} ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-white'}`}>
+                            <h4 className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Link Check</h4>
+                            <a href={selected.postLink} target="_blank" className={`${theme.accentBlue} text-sm hover:underline truncate block`}>{selected.postLink}</a>
+                        </div>
+                        <div className={`p-4 rounded-xl border ${theme.borderColor} ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-white'}`}>
+                           <h4 className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Payment Details</h4>
+                           <div className="flex items-center gap-2">
+                               <div className="w-2 h-2 bg-[#00F0FF] rounded-full"></div>
+                               <span className={`${theme.textMain} font-bold`}>TNG eWallet</span>
+                           </div>
+                           <p className="text-xs text-gray-500 mt-1">Claim: RM 50.00</p>
+                        </div>
+                     </div>
+                 </div>
+             </div>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500 uppercase tracking-widest text-sm">Select item to verify</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const VipRequestQueue = ({ requests, onApprove, onReject, theme }) => {
+    const [selected, setSelected] = useState(null);
+
+    useEffect(() => {
+        if (requests.length > 0 && !selected) setSelected(requests[0]);
+        if (requests.length === 0) setSelected(null);
+    }, [requests, selected]);
+
+    if (requests.length === 0) return (
+        <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <Crown size={64} className="mb-4 opacity-20" />
+            <p className="text-xl font-medium font-anton uppercase">No VIP Requests</p>
+        </div>
+    );
+
+    return (
+        <div className="h-[calc(100vh-8rem)] flex gap-6">
+            <div className={`w-1/3 ${theme.card} rounded-2xl flex flex-col overflow-hidden`}>
+                <div className={`p-4 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+                    <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>VIP Applications</h3>
+                    <span className={`text-xs ${theme.accentLime} font-mono`}>{requests.length} PENDING</span>
+                </div>
+                <div className="flex-1 overflow-auto divide-y divide-white/5">
+                    {requests.map(req => (
+                        <div key={req.id} onClick={() => setSelected(req)} className={`p-4 cursor-pointer transition-colors border-l-4 ${selected?.id === req.id ? 'bg-[#CCFF00]/10 border-[#CCFF00]' : `${theme.tableRowHover} border-transparent`}`}>
+                            <div className="flex justify-between items-center mb-1">
+                                <span className={`font-bold ${theme.textMain}`}>{req.name}</span>
+                                <Badge color="yellow">{req.vipStatus}</Badge>
+                            </div>
+                            <p className={`text-sm ${theme.textMuted} mb-1`}>{req.handle}</p>
+                            <div className="flex gap-2 text-[10px] text-gray-500">
+                                <span>{req.campaignCompletedCount} Campaigns</span>
+                                <span>•</span>
+                                <span>{req.referralCount} Referrals</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className={`flex-1 ${theme.card} rounded-2xl p-8 flex flex-col`}>
+                {selected ? (
+                    <>
+                        <div className="flex justify-between items-start mb-8">
+                            <div>
+                                <h2 className={`text-4xl ${theme.textMain} font-anton mb-2`}>{selected.name}</h2>
+                                <p className={theme.textMuted}>Requesting <span className="text-yellow-500 font-bold">VIP Status</span> Upgrade</p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={() => onReject(selected.id)} className={`${theme.btnGhost} border border-red-500/50 text-red-500 px-6 py-2 rounded-full uppercase text-xs font-bold`}>Reject</button>
+                                <button onClick={() => onApprove(selected.id)} className={`${theme.btnPrimary} px-6 py-2 rounded-full flex items-center uppercase text-xs font-bold`}>
+                                    <Crown size={16} className="mr-2"/> Approve VIP
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-8">
+                            <div className={`p-6 rounded-xl border ${theme.borderColor} ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-white'}`}>
+                                <h4 className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-4`}>Eligibility Checklist</h4>
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className={theme.textMain}>Campaigns Completed ({selected.campaignCompletedCount}/5)</span>
+                                        {selected.campaignCompletedCount >= 5 ? <CheckCircle size={16} className="text-green-500"/> : <XCircle size={16} className="text-red-500"/>}
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className={theme.textMain}>Referrals ({selected.referralCount}/5)</span>
+                                        {selected.referralCount >= 5 ? <CheckCircle size={16} className="text-green-500"/> : <XCircle size={16} className="text-red-500"/>}
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className={theme.textMain}>Payment Receipt</span>
+                                        {selected.vipReceiptUrl ? <CheckCircle size={16} className="text-green-500"/> : <XCircle size={16} className="text-red-500"/>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={`p-6 rounded-xl border ${theme.borderColor} flex items-center justify-center ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-gray-100'}`}>
+                                {selected.vipReceiptUrl ? (
+                                    <div className="text-center">
+                                        <FileText size={40} className="mx-auto text-gray-500 mb-2"/>
+                                        <span className="text-xs font-bold uppercase block text-gray-400">Payment Receipt</span>
+                                        <button className={`${theme.accentBlue} text-xs underline mt-2`}>View Document</button>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-gray-500 uppercase">No Receipt Uploaded</span>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-gray-500 uppercase tracking-widest text-sm">Select a request</div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const Leaderboard = ({ sidekicks, theme }) => {
+    const sortedSidekicks = [...sidekicks].sort((a, b) => b.monthlyExp - a.monthlyExp).slice(0, 50);
+
+    return (
+        <div className={`${theme.card} rounded-2xl overflow-hidden h-[calc(100vh-8rem)] flex flex-col`}>
+             <div className={`p-6 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+                <div className="flex items-center gap-3">
+                    <Trophy className="text-yellow-500" size={24}/>
+                    <div>
+                        <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>Top 50 Sidekicks</h3>
+                        <p className="text-[10px] text-gray-500">Ranked by Monthly EXP</p>
+                    </div>
+                </div>
+                <button className={`${theme.btnGhost} border border-red-500/30 text-red-500 hover:bg-red-900/10 text-xs px-4 py-2 rounded uppercase font-bold`}>Reset Ladder</button>
+            </div>
+            <div className="flex-1 overflow-auto">
+                <table className="w-full text-left text-sm">
+                    <thead className={`${theme.tableHeader} border-b ${theme.borderColor} uppercase text-xs tracking-wider sticky top-0 z-10`}>
+                        <tr>
+                            <th className="px-6 py-4 font-normal">Rank</th>
+                            <th className="px-6 py-4 font-normal">Sidekick</th>
+                            <th className="px-6 py-4 font-normal">Level</th>
+                            <th className="px-6 py-4 font-normal text-right">Monthly EXP</th>
+                            <th className="px-6 py-4 font-normal text-right">Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody className={`divide-y ${theme.bg === 'bg-[#1A1A1A]' ? 'divide-white/5' : 'divide-gray-200'}`}>
+                        {sortedSidekicks.map((sk, index) => (
+                            <tr key={sk.id} className={`${theme.tableRowHover} ${index < 3 ? (theme.bg === 'bg-[#1A1A1A]' ? 'bg-yellow-900/10' : 'bg-yellow-50') : ''}`}>
+                                <td className="px-6 py-4 font-anton text-lg text-gray-500">#{index + 1}</td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center">
+                                        <span className={`${theme.textMain} font-bold mr-2`}>{sk.name}</span>
+                                        {sk.verifiedBadge && <CheckCircle size={14} className="text-[#CCFF00] fill-current" />}
+                                    </div>
+                                    <span className="text-xs text-gray-500 font-mono">{sk.handle}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <Badge color={sk.level === 'VIP' ? 'gold' : 'gray'}>{sk.level}</Badge>
+                                </td>
+                                <td className={`px-6 py-4 text-right font-bold ${theme.accentLime} font-mono`}>{sk.monthlyExp}</td>
+                                <td className="px-6 py-4 text-right text-gray-400 font-mono">{(sk.successRate || 0).toFixed(1)}%</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+const TaskCreator = ({ onCreate, theme, sidekicks }) => {
+    const { settings } = useSystemSettings();
+    const [form, setForm] = useState({
+        title: '',
+        scope: '',
+        platform: 'Instagram',
+        tier: 'C',
+        count: 50,
+        payment: settings.campaignConfig.minPayout,
+        deadline: '',
+        instructions: '',
+        hashtags: '',
+        targetLink: '',
+        directives: '',
+        tngLink: '',
+        tngQrImage: null,
+        expReward: settings.campaignConfig.defaultExpReward, 
+        vipOnly: false,
+        minFollowersOverride: ''
+    });
+
+    const totalLiability = form.count * form.payment;
+    
+    // Dynamic calculation of eligible sidekicks
+    const eligibleSidekicksCount = useMemo(() => {
+        return sidekicks.filter(sk => {
+            if (sk.platform !== form.platform) return false;
+            if (form.vipOnly && sk.vipStatus !== 'Active') return false;
+
+            let minFollowers = 0;
+            switch(form.tier) {
+                case 'A': minFollowers = settings.tierConfig.tierA_minFollowers; break;
+                case 'B': minFollowers = settings.tierConfig.tierB_minFollowers; break;
+                case 'C': minFollowers = settings.tierConfig.tierC_minFollowers; break;
+                case 'D': minFollowers = settings.tierConfig.tierD_minFollowers; break;
+                case 'E': minFollowers = settings.tierConfig.tierE_minFollowers; break;
+                default: minFollowers = 0;
+            }
+
+            if (form.minFollowersOverride && !isNaN(form.minFollowersOverride) && form.minFollowersOverride !== '') {
+                minFollowers = parseInt(form.minFollowersOverride, 10);
+            }
+
+            return sk.followers >= minFollowers;
+        }).length;
+    }, [sidekicks, form.platform, form.tier, form.vipOnly, form.minFollowersOverride, settings]);
+
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onCreate(form);
+    };
+
+    return (
+        <div className="max-w-5xl mx-auto pb-10">
+            <div className={`${theme.card} rounded-2xl overflow-hidden`}>
+                <div className={`p-6 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+                    <div>
+                        <h2 className={`text-2xl ${theme.textMain} mb-1`}>Initiate Campaign</h2>
+                        <p className={`text-xs ${theme.textMuted} uppercase tracking-wider`}>Define parameters & Allocate Budget</p>
+                    </div>
+                </div>
+                <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                    
+                    <div className="md:col-span-2">
+                        <h4 className={`text-xs ${theme.accentLime} uppercase tracking-widest mb-4 border-b ${theme.borderColor} pb-2`}>01 // Mission Identity</h4>
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Campaign Designation</label>
+                        <input required type="text" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} placeholder="E.G. OPERATION SUMMER STORM" value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
+                    </div>
+                    
+                    <div>
+                        <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Target Platform</label>
+                        <select className={`w-full px-4 py-3 rounded-lg ${theme.input}`} value={form.platform} onChange={e => setForm({...form, platform: e.target.value})}>
+                            <option>Instagram</option>
+                            <option>TikTok</option>
+                            <option>Facebook</option>
+                            <option>X (Twitter)</option>
+                            <option>Threads</option>
+                        </select>
+                    </div>
+                    <div>
+                         <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Minimum Clearance (Tier)</label>
+                         <select className={`w-full px-4 py-3 rounded-lg ${theme.input}`} value={form.tier} onChange={e => setForm({...form, tier: e.target.value})}>
+                             <option value="A">Tier A ({'>'}10k)</option>
+                             <option value="B">Tier B ({'>'}5k)</option>
+                             <option value="C">Tier C ({'>'}3k)</option>
+                             <option value="D">Tier D ({'>'}2k)</option>
+                             <option value="E">Tier E (Micro)</option>
+                         </select>
+                         
+                         <div className="mt-4">
+                             <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Min Follower Override (Optional)</label>
+                             <input 
+                                type="number" 
+                                className={`w-full px-4 py-2 rounded-lg ${theme.input} text-sm`} 
+                                placeholder="e.g. 1500" 
+                                value={form.minFollowersOverride}
+                                onChange={e => setForm({...form, minFollowersOverride: e.target.value})}
+                             />
+                         </div>
+
+                         <p className={`text-[10px] ${theme.accentLime} mt-2 flex items-center font-mono`}><Users size={12} className="mr-1"/> {eligibleSidekicksCount} SIDEKICKS READY</p>
+                    </div>
+
+                    <div className="md:col-span-2 mt-4">
+                        <h4 className={`text-xs ${theme.accentLime} uppercase tracking-widest mb-4 border-b ${theme.borderColor} pb-2`}>02 // Operational Intel</h4>
+                    </div>
+
+                    <div>
+                        <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Target Account Link</label>
+                        <input type="text" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} placeholder="HTTPS://INSTAGRAM.COM/TARGET_HANDLE" value={form.targetLink} onChange={e => setForm({...form, targetLink: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Required Hashtags</label>
+                        <input type="text" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} placeholder="#CAMPAIGN #AD #BRAND" value={form.hashtags} onChange={e => setForm({...form, hashtags: e.target.value})} />
+                    </div>
+
+                    <div className="md:col-span-2">
+                         <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Mission Scope</label>
+                         <textarea required rows="2" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} placeholder="DEFINE HIGH-LEVEL OBJECTIVES..." value={form.scope} onChange={e => setForm({...form, scope: e.target.value})} />
+                    </div>
+
+                    <div className="md:col-span-2">
+                         <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Operational Directives</label>
+                         <textarea rows="2" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} placeholder="SPECIFIC ACTIONS: LIKE, COMMENT, SHARE TO STORY..." value={form.directives} onChange={e => setForm({...form, directives: e.target.value})} />
+                    </div>
+
+                    <div className="md:col-span-2 mt-4">
+                        <h4 className={`text-xs ${theme.accentLime} uppercase tracking-widest mb-4 border-b ${theme.borderColor} pb-2`}>03 // Financial Protocol</h4>
+                    </div>
+
+                    <div>
+                        <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Sidekick Count</label>
+                        <input type="number" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} value={form.count} onChange={e => setForm({...form, count: Number(e.target.value)})} />
+                    </div>
+                    <div>
+                         <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Bounty Per Sidekick (RM)</label>
+                         <input type="number" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} value={form.payment} onChange={e => setForm({...form, payment: Number(e.target.value)})} />
+                    </div>
+                    
+                    <div className="md:col-span-2 grid grid-cols-2 gap-8">
+                        <div>
+                             <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>EXP Reward</label>
+                             <select className={`w-full px-4 py-3 rounded-lg ${theme.input}`} value={form.expReward} onChange={e => setForm({...form, expReward: Number(e.target.value)})}>
+                                 <option value="25">25 EXP (Standard)</option>
+                                 <option value="50">50 EXP (Boosted)</option>
+                                 <option value="75">75 EXP (High Value)</option>
+                                 <option value="100">100 EXP (Elite)</option>
+                             </select>
+                        </div>
+                        <div className="flex items-center pt-6">
+                            <label className="flex items-center cursor-pointer">
+                                <input type="checkbox" className="mr-3 w-5 h-5 accent-[#CCFF00]" checked={form.vipOnly} onChange={e => setForm({...form, vipOnly: e.target.checked})} />
+                                <span className={`${theme.textMain} font-bold`}>VIP Sidekicks Only</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className={`md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8 ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-gray-50'} p-6 rounded-xl border ${theme.borderColor}`}>
+                        <div className="md:col-span-2 mb-2">
+                            <span className={`text-[10px] ${theme.accentBlue} uppercase tracking-widest font-bold`}>TNG eWallet Integration</span>
+                        </div>
+                        <div>
+                            <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>TNG Payment Link</label>
+                            <input type="text" className={`w-full px-4 py-3 rounded-lg ${theme.input}`} placeholder="HTTPS://TOUCHNGO..." value={form.tngLink} onChange={e => setForm({...form, tngLink: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>QR Code Matrix</label>
+                            <div className={`relative w-full px-4 py-3 rounded-lg ${theme.input} flex items-center justify-center cursor-pointer border-dashed border-2 group hover:border-[#CCFF00] transition-colors`}>
+                                <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" onChange={e => setForm({...form, tngQrImage: e.target.files[0]})} />
+                                <div className="flex items-center text-gray-500 group-hover:text-[#CCFF00] transition-colors">
+                                    <Upload size={16} className="mr-2"/>
+                                    <span className="text-[10px] uppercase tracking-wider font-bold">{form.tngQrImage ? 'ASSET LOADED' : 'UPLOAD QR IMAGE'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                         <label className={`block text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Encrypted Instructions (Hidden until Accepted)</label>
+                         <textarea className={`w-full px-4 py-3 rounded-lg ${theme.input}`} rows="3" placeholder="SENSITIVE INTEL: PROTOCOLS, CONTACTS, SPECIFIC VERBIAGE..." value={form.instructions} onChange={e => setForm({...form, instructions: e.target.value})} />
+                    </div>
+
+                    <div className={`md:col-span-2 pt-6 border-t ${theme.borderColor} flex justify-end items-center gap-6`}>
+                        <div className="text-right mr-auto">
+                            <p className={`text-[10px] ${theme.textMuted} uppercase tracking-widest`}>Estimated Liability</p>
+                            <p className={`text-3xl ${theme.textMain} font-anton`}>{formatCurrency(totalLiability)}</p>
+                        </div>
+                        <button type="button" className={`${theme.btnSecondary} px-6 py-3 rounded-full text-xs`}>SAVE DRAFT</button>
+                        <button type="submit" className={`${theme.btnPrimary} px-8 py-3 rounded-full flex items-center text-xs`}>
+                            <Megaphone size={16} className="mr-2"/> BROADCAST ORDER
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const CampaignDetailView = ({ campaign, applications, onBack, onUpdateAppStatus, theme }) => {
+  if (!campaign) return null;
+
+  const percentage = Math.min(100, Math.round((campaign.accepted / campaign.required) * 100));
+  
+  return (
+    <div className="space-y-6">
+      <button onClick={onBack} className={`flex items-center ${theme.textMuted} hover:text-current transition-colors uppercase text-xs font-bold tracking-wider`}>
+        <ChevronLeft size={16} className="mr-1" /> Back to Command
+      </button>
+
+      <div className={`${theme.card} p-8 rounded-2xl`}>
+         <div className="flex justify-between items-start mb-8">
+            <div>
+               <div className="flex items-center gap-4 mb-2">
+                  <h2 className={`text-4xl ${theme.textMain} mb-0`}>{campaign.title}</h2>
+                  <Badge color={campaign.status === 'Active' ? 'green' : 'gray'}>{campaign.status}</Badge>
+               </div>
+               <p className={`${theme.textMuted} uppercase tracking-wider text-sm`}>
+                 <span className={theme.accentBlue}>{campaign.platform}</span> • Tier {campaign.tier}+
+               </p>
+            </div>
+            <div className="text-right">
+               <p className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-1`}>Total Liability</p>
+               <p className={`text-4xl ${theme.textMain} font-anton`}>{formatCurrency(campaign.budget)}</p>
+            </div>
+         </div>
+
+         <div className={`grid grid-cols-1 md:grid-cols-4 gap-8 border-t ${theme.borderColor} pt-8`}>
+            <div>
+               <p className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Participation</p>
+               <p className={`text-3xl ${theme.accentLime} font-anton`}>{campaign.accepted} <span className="text-gray-500 text-lg">/ {campaign.required}</span></p>
+               <div className="w-full bg-gray-700 h-2 rounded-full mt-3 overflow-hidden">
+                  <div className="bg-[#CCFF00] h-full" style={{ width: `${percentage}%` }}></div>
+               </div>
+               <p className="text-[10px] text-gray-500 mt-2 uppercase tracking-wider">{percentage}% FILLED</p>
+            </div>
+            <div>
+               <p className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Applications</p>
+               <p className={`text-3xl ${theme.textMain} font-anton`}>{campaign.applied}</p>
+               <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">{campaign.applied - campaign.accepted} PENDING REVIEW</p>
+            </div>
+            <div>
+               <p className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Budget Burn</p>
+               <p className={`text-3xl ${theme.textMain} font-anton`}>{formatCurrency(campaign.spent)}</p>
+               <p className="text-[10px] text-gray-500 mt-1 uppercase tracking-wider">{formatCurrency(campaign.budget - campaign.spent)} REMAINING</p>
+            </div>
+            <div>
+               <p className={`text-xs ${theme.textMuted} uppercase tracking-widest mb-2`}>Security Protocol</p>
+               <div className="flex items-center mt-2">
+                  {campaign.instructionsLocked ? (
+                      <div className="flex items-center text-yellow-500 text-sm font-bold uppercase tracking-wider border border-yellow-500/30 px-3 py-1 rounded-full bg-yellow-500/10">
+                         <Lock size={14} className="mr-2"/> Locked
+                      </div>
+                  ) : (
+                      <div className="flex items-center text-[#CCFF00] text-sm font-bold uppercase tracking-wider border border-[#CCFF00]/30 px-3 py-1 rounded-full bg-[#CCFF00]/10">
+                         <Unlock size={14} className="mr-2"/> Public
+                      </div>
+                  )}
+               </div>
+            </div>
+         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+         <div className={`lg:col-span-2 ${theme.card} rounded-2xl overflow-hidden`}>
+            <div className={`p-4 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+               <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>Sidekick Applications</h3>
+            </div>
+            <table className="w-full text-left text-sm">
+               <thead className={`${theme.tableHeader} border-b ${theme.borderColor} uppercase text-xs tracking-wider`}>
+                  <tr>
+                      <th className="px-6 py-4 font-normal">Sidekick</th>
+                      <th className="px-6 py-4 font-normal">Tier</th>
+                      <th className="px-6 py-4 font-normal">Timestamp</th>
+                      <th className="px-6 py-4 font-normal">Status</th>
+                      <th className="px-6 py-4 font-normal text-right">Action</th>
+                  </tr>
+               </thead>
+               <tbody className={`divide-y ${theme.bg === 'bg-[#1A1A1A]' ? 'divide-white/5' : 'divide-gray-200'}`}>
+                  {applications.filter(a => a.taskId === campaign.id).length > 0 ? (
+                      applications.filter(a => a.taskId === campaign.id).map(app => (
+                        <tr key={app.id} className={`${theme.tableRowHover} transition-colors`}>
+                            <td className="px-6 py-4">
+                            <div className={`font-bold ${theme.textMain}`}>{app.name}</div>
+                            <div className="text-xs text-gray-500 font-mono">ID: {app.sidekickId}</div>
+                            </td>
+                            <td className="px-6 py-4"><Badge>{app.tier}</Badge></td>
+                            <td className="px-6 py-4 text-gray-500 font-mono text-xs">{app.appliedAt}</td>
+                            <td className="px-6 py-4">
+                            <Badge color={app.status === 'Accepted' ? 'green' : app.status === 'Rejected' ? 'red' : 'yellow'}>{app.status}</Badge>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                                {app.status === 'Applied' && (
+                                    <div className="flex justify-end gap-2">
+                                        <button onClick={() => onUpdateAppStatus(app.id, 'Accepted')} className="text-[10px] bg-green-900/30 text-green-400 border border-green-500/50 px-2 py-1 rounded uppercase font-bold hover:bg-green-900/50">Accept</button>
+                                        <button onClick={() => onUpdateAppStatus(app.id, 'Rejected')} className="text-[10px] bg-red-900/30 text-red-400 border border-red-500/50 px-2 py-1 rounded uppercase font-bold hover:bg-red-900/50">Reject</button>
+                                    </div>
+                                )}
+                            </td>
+                        </tr>
+                      ))
+                  ) : (
+                      <tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500 uppercase tracking-widest text-xs">No applications found</td></tr>
+                  )}
+               </tbody>
+            </table>
+         </div>
+
+         <div className={`${theme.card} rounded-2xl p-6`}>
+            <h3 className={`font-bold ${theme.textMain} mb-6 flex items-center uppercase tracking-wider`}>
+               <FileText size={18} className={`mr-2 ${theme.accentLime}`}/> Task Protocol
+            </h3>
+            <div className={`p-4 ${theme.bg === 'bg-[#1A1A1A]' ? 'bg-[#111]' : 'bg-gray-50'} rounded-xl border ${theme.borderColor} text-sm ${theme.textMuted} font-mono mb-4 leading-relaxed`}>
+               {campaign.hiddenDetails}
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-500 uppercase tracking-wider">
+               <span>Encrypted until acceptance</span>
+               <button className={`${theme.accentBlue} hover:text-current transition-colors`}>Edit Protocol</button>
+            </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+
+function SidekickCommandCenterInner() {
+  const { settings } = useSystemSettings();
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [sidekickSearch, setSidekickSearch] = useState('');
+  const [globalSearch, setGlobalSearch] = useState(''); 
+  const [tierFilter, setTierFilter] = useState('All');
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  
+  const theme = isDarkMode ? DARK_THEME : LIGHT_THEME;
+
+  const [sidekicks, setSidekicks] = useState([]);
+  const [tasks, setTasks] = useState(initialTasks);
+  const [applications, setApplications] = useState(initialApplications);
+  const [approvals, setApprovals] = useState(initialApprovals);
+  const [registrations, setRegistrations] = useState(initialRegistrations);
+  const [broadcasts, setBroadcasts] = useState(initialBroadcasts);
+  const [notification, setNotification] = useState(null);
+
+  useEffect(() => {
+    // Generate sidekicks dynamically using context settings
+    setSidekicks(generateSidekicks(50, settings));
+  }, [settings.tierConfig, settings.vipConfig]);
+
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const filteredTasks = tasks.filter(t => 
+    t.title.toLowerCase().includes(globalSearch.toLowerCase()) ||
+    t.platform.toLowerCase().includes(globalSearch.toLowerCase())
+  );
+
+  const filteredRegistrations = registrations.filter(r => 
+    r.name.toLowerCase().includes(globalSearch.toLowerCase()) ||
+    r.socialProfiles.some(p => p.handle.toLowerCase().includes(globalSearch.toLowerCase()))
+  );
+
+  const filteredApprovals = approvals.filter(a => 
+    a.sidekickName.toLowerCase().includes(globalSearch.toLowerCase()) ||
+    a.task.toLowerCase().includes(globalSearch.toLowerCase())
+  );
+
+  const filteredSidekicks = sidekicks.filter(sk => {
+    const searchTerm = sidekickSearch || globalSearch; 
+    const matchesSearch = sk.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTier = tierFilter === 'All' || sk.tier === tierFilter;
+    return matchesSearch && matchesTier;
+  });
+
+  const vipRequests = useMemo(() => {
+      return sidekicks.filter(sk => ['PaymentSubmitted', 'PendingApproval'].includes(sk.vipStatus));
+  }, [sidekicks]);
+
+  const handleCreateTask = (newTask) => {
+    const budget = newTask.count * newTask.payment;
+    const task = {
+      id: tasks.length + 1,
+      ...newTask,
+      budget: budget,
+      spent: 0,
+      applied: 0,
+      accepted: 0,
+      completed: 0,
+      status: 'Active',
+      hiddenDetails: newTask.instructions,
+      instructionsLocked: true
+    };
+    setTasks([task, ...tasks]);
+    showNotification(`Campaign "${newTask.title}" broadcasted. Liability: ${formatCurrency(budget)}`);
+    setCurrentView('tasks');
+  };
+
+  const handleApproveVip = (id) => {
+      setSidekicks(prev => prev.map(sk => {
+          if(sk.id === id) {
+              const now = new Date().toISOString().split('T')[0];
+              return {
+                  ...sk,
+                  level: 'VIP',
+                  vipStatus: 'Active',
+                  vipApprovedAt: now,
+                  vipExpiresAt: addDays(now, settings.vipConfig.vipDurationDays),
+                  verifiedBadge: true
+              }
+          }
+          return sk;
+      }));
+      showNotification('VIP Request Approved');
+  };
+
+  const handleRejectVip = (id) => {
+      setSidekicks(prev => prev.map(sk => sk.id === id ? {...sk, vipStatus: 'Eligible'} : sk));
+      showNotification('VIP Request Rejected', 'error');
+  };
+
+  const handleApproveRegistration = (reg) => {
+    const primaryProfile = reg.socialProfiles.reduce((prev, current) => (prev.followers > current.followers) ? prev : current);
+    const tier = calculateTier(primaryProfile.followers, settings.tierConfig);
+    
+    const newSidekick = {
+      id: `SK-${1000 + sidekicks.length + 1}`,
+      name: reg.name,
+      handle: primaryProfile.handle,
+      tier: tier,
+      followers: primaryProfile.followers,
+      platform: primaryProfile.platform,
+      rating: 0,
+      completedTasks: 0,
+      submittedTasks: 0,
+      status: 'Active',
+      earnings: 0,
+      flagged: false,
+      joinDate: new Date().toISOString().split('T')[0],
+      level: 'Premium',
+      vipStatus: 'NotEligible',
+      verifiedBadge: false,
+      totalExp: 0,
+      monthlyExp: 0,
+      approvedPaidTasks: 0,
+      attemptedTasks: 0,
+      successRate: 0,
+      referralCode: `${reg.name.substring(0,3).toUpperCase()}${Date.now().toString().slice(-4)}`,
+      referralCount: 0,
+      campaignCompletedCount: 0
+    };
+    setSidekicks([newSidekick, ...sidekicks]);
+    setRegistrations(prev => prev.filter(r => r.id !== reg.id));
+    showNotification(`Sidekick ${reg.name} approved as Tier ${tier}.`);
+  };
+
+  const handleRejectRegistration = (id) => {
+    setRegistrations(prev => prev.filter(r => r.id !== id));
+    showNotification('Registration rejected.', 'error');
+  };
+
+  const handleApproveTask = (approvalId, taskId, expAwarded = 50, sidekickId) => {
+    setApprovals(prev => prev.filter(item => item.id !== approvalId));
+    setSidekicks(prev => prev.map(sk => {
+        if(sk.id === sidekickId || sk.name === approvals.find(a => a.id === approvalId)?.sidekickName) { 
+             const newApproved = (sk.approvedPaidTasks || 0) + 1;
+             const newAttempted = (sk.attemptedTasks || 0); 
+             return {
+                 ...sk,
+                 monthlyExp: (sk.monthlyExp || 0) + expAwarded,
+                 totalExp: (sk.totalExp || 0) + expAwarded,
+                 approvedPaidTasks: newApproved,
+                 successRate: newAttempted > 0 ? (newApproved / newAttempted) * 100 : 0
+             }
+        }
+        return sk;
+    }));
+    showNotification(`Payment released & ${expAwarded} EXP awarded!`, 'success');
+  };
+
+  const handleRejectTask = (id) => {
+    setApprovals(prev => prev.filter(item => item.id !== id));
+    showNotification('Submission rejected.', 'error');
+  };
+
+  const handleCampaignClick = (campaign) => {
+    setSelectedCampaign(campaign);
+    setCurrentView('campaign-detail');
+  };
+
+  const handleUpdateAppStatus = (appId, newStatus) => {
+    setApplications(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
+    if (selectedCampaign) {
+        const adjustment = newStatus === 'Accepted' ? 1 : 0;
+        setTasks(prev => prev.map(t => t.id === selectedCampaign.id ? { ...t, accepted: t.accepted + adjustment } : t));
+        setSelectedCampaign(prev => ({ ...prev, accepted: prev.accepted + adjustment }));
+    }
+    showNotification(`Application marked as ${newStatus}`);
+  };
+
+  const handleSendBroadcast = (data) => {
+      const typeMap = {
+          'Admin HQ': 'HQ',
+          'System Admin': 'Admin',
+          'Sidekick Mentor': 'Mentor',
+          'Community Mgr': 'Community'
+      };
+
+      const newBroadcast = {
+          id: broadcasts.length + 1,
+          senderType: typeMap[data.senderType] || 'Admin',
+          sender: data.senderType.toUpperCase(),
+          message: data.message,
+          time: data.scheduleType === 'Now' ? 'Just now' : `Scheduled: ${data.scheduledDate}`,
+          audience: data.audience,
+          status: data.scheduleType === 'Now' ? 'Sent' : 'Scheduled'
+      };
+
+      setBroadcasts([newBroadcast, ...broadcasts]);
+      showNotification(data.scheduleType === 'Now' ? 'Transmission Broadcasted' : 'Transmission Scheduled', 'success');
+  };
+
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
+  const NavItem = ({ id, icon: Icon, label, count }) => (
+    <button
+      onClick={() => { setCurrentView(id); setSelectedCampaign(null); }}
+      className={`w-full flex items-center px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-r-full transition-all mb-2 border-l-4 ${
+        currentView === id || (currentView === 'campaign-detail' && id === 'tasks')
+          ? theme.navActive 
+          : theme.navInactive
+      }`}
+    >
+      <Icon size={18} className="mr-3" />
+      <span className="flex-1 text-left">{label}</span>
+      {count !== undefined && (
+        <span className={`px-2 py-0.5 rounded-full text-[10px] ${currentView === id ? 'bg-[#CCFF00] text-black' : 'bg-gray-800 text-gray-400'}`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+
+  return (
+    <div className={`flex h-screen ${theme.bg} font-sans text-gray-100 overflow-hidden`}>
+      <GlobalStyles isDarkMode={isDarkMode} />
+      
+      {/* Sidebar */}
+      <aside className={`w-64 ${theme.sidebarBg} border-r ${theme.borderColor} flex flex-col flex-shrink-0 z-20`}>
+        <div className="p-6 flex items-center space-x-3 mb-2">
+          <div className="w-10 h-10 bg-[#CCFF00] rounded-sm flex items-center justify-center shadow-[0_0_15px_rgba(204,255,0,0.3)] flex-shrink-0">
+            <Megaphone className="text-black" size={20} strokeWidth={3} />
+          </div>
+          <div className="flex flex-col">
+            <span className={`text-2xl font-anton ${theme.textMain} tracking-wide leading-none`}>SIDEKICK</span>
+            <span className="text-[10px] font-bold text-[#CCFF00] uppercase tracking-widest leading-none mt-1">Admin Command</span>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-0 py-6 space-y-1">
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-6">Mission Control</div>
+          <NavItem id="dashboard" icon={LayoutDashboard} label="Overview" />
+          <NavItem id="tasks" icon={Megaphone} label="Campaigns" count={tasks.filter(t => t.status === 'Active').length} />
+          <NavItem id="approvals" icon={CheckSquare} label="Approvals" count={approvals.length} />
+          <NavItem id="registrations" icon={UserPlus} label="Registrations" count={registrations.length} />
+          
+          <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 mt-8 px-6">Network Assets</div>
+          <NavItem id="seeders" icon={Users} label="Sidekick Hub" />
+          <NavItem id="vip-requests" icon={Crown} label="VIP Requests" count={vipRequests.length} />
+          <NavItem id="ladderboard" icon={Trophy} label="Leaderboard" />
+          <NavItem id="broadcasts" icon={Radio} label="Broadcasts" />
+          <NavItem id="analytics" icon={BarChart3} label="Intel" />
+        </nav>
+
+        <div className={`p-4 border-t ${theme.borderColor}`}>
+          <div className={`flex items-center p-3 rounded-xl ${isDarkMode ? 'bg-[#111]' : 'bg-gray-100'} border ${isDarkMode ? 'border-white/5' : 'border-gray-200'}`}>
+            <div className={`w-8 h-8 rounded ${isDarkMode ? 'bg-[#333]' : 'bg-gray-300'} flex items-center justify-center border ${theme.borderColor}`}>
+                <span className="font-bold text-[#CCFF00]">AD</span>
+            </div>
+            <div className="ml-3">
+              <p className={`text-xs font-bold ${theme.textMain} uppercase tracking-wider`}>Admin User</p>
+              <p className="text-[10px] text-gray-500 uppercase">Level 5 Access</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className={`flex-1 flex flex-col min-w-0 overflow-hidden ${isDarkMode ? "bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]" : "bg-gray-50"}`}>
+        <header className={`${theme.headerBg} backdrop-blur-md border-b ${theme.borderColor} h-20 flex items-center justify-between px-8 z-10`}>
+          <h1 className={`text-3xl font-anton ${theme.textMain} tracking-wide uppercase`}>
+            {currentView === 'tasks' ? 'Campaign Ops' : 
+             currentView === 'campaign-detail' ? 'Mission Brief' :
+             currentView === 'registrations' ? 'Recruitment' :
+             currentView === 'seeders' ? 'Sidekick Hub' : 
+             currentView === 'approvals' ? 'Verification' : 
+             currentView === 'create-task' ? 'Initiate Mission' :
+             currentView === 'analytics' ? 'Intelligence' :
+             currentView === 'broadcasts' ? 'HQ Broadcasts' :
+             currentView === 'vip-requests' ? 'VIP Approval' :
+             currentView === 'ladderboard' ? 'Leaderboard' :
+             'Command Center'}
+          </h1>
+          
+          <div className="flex items-center space-x-6">
+            <div className="relative hidden md:block group">
+              <input 
+                type="text" 
+                placeholder="SEARCH DATABASE..." 
+                value={globalSearch}
+                onChange={(e) => setGlobalSearch(e.target.value)}
+                className={`w-64 pl-10 pr-4 py-2 rounded-full ${theme.input} text-xs placeholder-gray-500 uppercase tracking-wider transition-all`}
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 group-focus-within:text-[#CCFF00]" size={14} />
+            </div>
+            
+            <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-[#CCFF00] transition-colors" title="Toggle Theme">
+               {isDarkMode ? <Sun size={20}/> : <Moon size={20}/>}
+            </button>
+
+            <button className="p-2 text-gray-400 hover:text-[#CCFF00] relative transition-colors">
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#CCFF00] rounded-full animate-pulse"></span>
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto p-8 relative">
+          {currentView === 'dashboard' && (
+             <div className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className={`${theme.card} p-6 rounded-2xl relative overflow-hidden group`}>
+                     <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <Users size={80} className={isDarkMode ? "text-white" : "text-gray-300"}/>
+                     </div>
+                     <div>
+                        <p className={`text-xs ${theme.textMuted} uppercase tracking-widest`}>Active Sidekicks</p>
+                        <h3 className={`text-4xl ${theme.textMain} font-anton mt-2`}>{sidekicks.length}</h3>
+                     </div>
+                     <div className="mt-4 w-12 h-1 bg-[#CCFF00]"></div>
+                  </div>
+                  <div className={`${theme.card} p-6 rounded-2xl relative overflow-hidden group`}>
+                     <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <UserPlus size={80} className={isDarkMode ? "text-white" : "text-gray-300"}/>
+                     </div>
+                     <div>
+                        <p className={`text-xs ${theme.textMuted} uppercase tracking-widest`}>Recruitment</p>
+                        <h3 className={`text-4xl ${theme.textMain} font-anton mt-2`}>{registrations.length}</h3>
+                     </div>
+                     <div className="mt-4 w-12 h-1 bg-amber-500"></div>
+                  </div>
+                   <div className={`${theme.card} p-6 rounded-2xl relative overflow-hidden group`}>
+                     <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <CheckSquare size={80} className={isDarkMode ? "text-white" : "text-gray-300"}/>
+                     </div>
+                     <div>
+                        <p className={`text-xs ${theme.textMuted} uppercase tracking-widest`}>Pending Review</p>
+                        <h3 className={`text-4xl ${theme.textMain} font-anton mt-2`}>{approvals.length}</h3>
+                     </div>
+                     <div className="mt-4 w-12 h-1 bg-emerald-500"></div>
+                  </div>
+                   <div className={`${theme.cardSecondary} p-6 rounded-2xl relative overflow-hidden group`}>
+                     <div className="absolute right-0 top-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <Wallet size={80} className="text-[#CCFF00]"/>
+                     </div>
+                     <div>
+                        <p className={`text-xs ${isDarkMode ? 'text-[#CCFF00]/80' : 'text-[#4D7C0F]/80'} uppercase tracking-widest`}>Monthly Liability</p>
+                        <h3 className={`text-4xl ${isDarkMode ? 'text-[#CCFF00]' : 'text-[#4D7C0F]'} font-anton mt-2`}>RM 12.4K</h3>
+                     </div>
+                     <div className={`mt-4 w-12 h-1 ${isDarkMode ? 'bg-[#CCFF00]' : 'bg-[#4D7C0F]'}`}></div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                   <div className={`lg:col-span-2 ${theme.card} p-6 rounded-2xl`}>
+                      <div className="flex justify-between items-center mb-6">
+                          <h3 className={`font-bold ${theme.textMain} uppercase tracking-wider`}>Engagement Velocity</h3>
+                          <Badge color="green">+12% vs LW</Badge>
+                      </div>
+                      <div className="h-64">
+                         <ResponsiveContainer width="100%" height="100%">
+                           <LineChart data={analyticsData}>
+                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDarkMode ? "#333" : "#e5e7eb"} />
+                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: isDarkMode ? '#666' : '#9ca3af', fontSize: 10}} />
+                             <YAxis axisLine={false} tickLine={false} tick={{fill: isDarkMode ? '#666' : '#9ca3af', fontSize: 10}} />
+                             <Tooltip contentStyle={{backgroundColor: isDarkMode ? '#111' : '#fff', border: `1px solid ${isDarkMode ? '#333' : '#e5e7eb'}`, color: isDarkMode ? '#fff' : '#000'}} itemStyle={{color: '#CCFF00'}} />
+                             <Line type="monotone" dataKey="reach" stroke="#CCFF00" strokeWidth={3} dot={{r:4, fill: isDarkMode ? '#111' : '#fff', strokeWidth: 2}} activeDot={{r:6, fill: '#CCFF00'}} />
+                           </LineChart>
+                         </ResponsiveContainer>
+                      </div>
+                   </div>
+                   <div className={`${theme.card} p-6 rounded-2xl`}>
+                      <h3 className={`font-bold ${theme.textMain} mb-4 flex items-center uppercase tracking-wider`}>
+                          <ShieldAlert size={18} className="mr-2 text-red-500"/> Threat Monitor
+                      </h3>
+                      <div className="space-y-3">
+                        {systemAlerts.map(alert => (
+                           <div key={alert.id} className={`p-4 rounded border text-xs leading-relaxed ${alert.type === 'error' ? 'bg-red-900/10 border-red-900/30 text-red-400' : 'bg-yellow-900/10 border-yellow-900/30 text-yellow-600'}`}>
+                              <span className="font-bold block mb-1 uppercase tracking-wider">{alert.type} DETECTED</span>
+                              {alert.message}
+                              <div className="text-[10px] opacity-60 mt-2 font-mono">{alert.time}</div>
+                           </div>
+                        ))}
+                      </div>
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {currentView === 'tasks' && (
+            <div className="space-y-8">
+               <div className="grid grid-cols-3 gap-6">
+                 <div className={`${theme.cardSecondary} p-6 rounded-2xl relative overflow-hidden`}>
+                    <p className={`opacity-80 text-xs font-bold uppercase tracking-widest mb-2 ${isDarkMode ? 'text-[#CCFF00]' : 'text-[#4D7C0F]'}`}>Total Liability</p>
+                    <h3 className={`text-5xl font-anton ${isDarkMode ? 'text-[#CCFF00]' : 'text-[#4D7C0F]'}`}>{formatCurrency(tasks.reduce((acc, t) => acc + t.budget, 0))}</h3>
+                 </div>
+                 <div className={`${theme.card} p-6 rounded-2xl`}>
+                    <p className={`text-gray-500 text-xs font-bold uppercase tracking-widest mb-2`}>Allocated Budget</p>
+                    <h3 className={`text-5xl font-anton ${theme.textMain}`}>{formatCurrency(tasks.reduce((acc, t) => acc + t.spent, 0))}</h3>
+                 </div>
+                 <button onClick={() => setCurrentView('create-task')} className={`rounded-2xl border border-dashed ${isDarkMode ? 'border-gray-700' : 'border-gray-300'} hover:border-[#CCFF00] hover:bg-[#CCFF00]/5 flex flex-col items-center justify-center transition-all group`}>
+                    <Plus className="text-gray-500 group-hover:text-[#CCFF00] mb-2 transition-colors" size={32} />
+                    <span className="font-bold text-gray-500 group-hover:text-[#CCFF00] uppercase tracking-wider text-xs transition-colors">Create Mission</span>
+                 </button>
+               </div>
+
+               <div className={`${theme.card} rounded-2xl overflow-hidden`}>
+                  <div className={`p-4 border-b ${theme.borderColor} flex justify-between items-center ${theme.tableHeader}`}>
+                    <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>Active Operations</h3>
+                  </div>
+                  <table className="w-full text-left text-sm">
+                    <thead className={`${theme.tableHeader} border-b ${theme.borderColor} uppercase text-xs tracking-wider`}>
+                      <tr>
+                        <th className="px-6 py-4 font-normal">Mission Name</th>
+                        <th className="px-6 py-4 font-normal">Platform</th>
+                        <th className="px-6 py-4 font-normal">Reward</th>
+                        <th className="px-6 py-4 font-normal">Cost</th>
+                        <th className="px-6 py-4 font-normal">Status</th>
+                        <th className="px-6 py-4 font-normal text-right">Command</th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y ${isDarkMode ? 'divide-white/5' : 'divide-gray-200'}`}>
+                      {filteredTasks.length > 0 ? (
+                          filteredTasks.map(task => (
+                            <tr key={task.id} className={`${theme.tableRowHover} cursor-pointer transition-colors`} onClick={() => handleCampaignClick(task)}>
+                              <td className={`px-6 py-4 font-bold ${theme.textMain}`}>
+                                  {task.title}
+                                  {task.vipOnly && <span className="ml-2 text-[10px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded border border-yellow-500/50">VIP</span>}
+                              </td>
+                              <td className="px-6 py-4"><Badge color="blue">{task.platform}</Badge></td>
+                              <td className="px-6 py-4">
+                                  <div className="flex items-center text-xs font-mono text-[#CCFF00]">
+                                      <Award size={12} className="mr-1"/> {task.expReward} EXP
+                                  </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                 <span className={`block ${theme.textMain} font-mono font-bold`}>{formatCurrency(task.spent)}</span>
+                                 <span className="text-[10px] text-gray-500 uppercase">MAX {formatCurrency(task.budget)}</span>
+                              </td>
+                              <td className="px-6 py-4"><Badge color={task.status === 'Active' ? 'green' : 'gray'}>{task.status}</Badge></td>
+                              <td className="px-6 py-4 text-right">
+                                 <button className={`${theme.accentBlue} font-bold text-xs uppercase hover:text-current transition-colors`}>Execute</button>
+                              </td>
+                            </tr>
+                          ))
+                      ) : (
+                          <tr><td colSpan="6" className="px-6 py-8 text-center text-gray-500 uppercase tracking-widest text-xs">No active operations found</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+               </div>
+            </div>
+          )}
+
+          {currentView === 'campaign-detail' && <CampaignDetailView campaign={selectedCampaign} applications={applications} onBack={() => setCurrentView('tasks')} onUpdateAppStatus={handleUpdateAppStatus} theme={theme} />}
+
+          {currentView === 'registrations' && <RegistrationQueue registrations={filteredRegistrations} onApprove={handleApproveRegistration} onReject={handleRejectRegistration} theme={theme} />}
+          
+          {currentView === 'approvals' && <ApprovalQueue items={filteredApprovals} onApprove={handleApproveTask} onReject={handleRejectTask} theme={theme} />}
+
+          {currentView === 'seeders' && (
+             <div className={`${theme.card} rounded-2xl overflow-hidden`}>
+                <div className={`p-4 border-b ${theme.borderColor} ${theme.tableHeader} flex justify-between items-center`}>
+                    <h3 className={`font-semibold ${theme.textMain} uppercase tracking-wider`}>Sidekick Hub Roster ({filteredSidekicks.length})</h3>
+                    <div className="flex items-center gap-4">
+                        <div className="relative">
+                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" size={14} />
+                            <select 
+                                value={tierFilter}
+                                onChange={(e) => setTierFilter(e.target.value)}
+                                className={`pl-10 pr-8 py-2 rounded-lg ${theme.input} text-xs uppercase tracking-wider appearance-none cursor-pointer hover:bg-opacity-80 transition-all`}
+                            >
+                                <option value="All">All Tiers</option>
+                                <option value="A">Tier A</option>
+                                <option value="B">Tier B</option>
+                                <option value="C">Tier C</option>
+                                <option value="D">Tier D</option>
+                                <option value="E">Tier E</option>
+                            </select>
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1 1L5 5L9 1" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <button className={`${theme.btnSecondary} px-4 py-2 rounded text-xs`}>Export Intel</button>
+                    </div>
+                </div>
+                <table className="w-full text-left text-sm">
+                   <thead className={`${theme.tableHeader} border-b ${theme.borderColor} uppercase text-xs tracking-wider`}>
+                      <tr>
+                         <th className="px-6 py-4 font-normal">SIDEKICK NAME</th>
+                         <th className="px-6 py-4 font-normal">TIER</th>
+                         <th className="px-6 py-4 font-normal">Level</th>
+                         <th className="px-6 py-4 font-normal">Success Rate</th>
+                         <th className="px-6 py-4 font-normal text-right">Total EXP</th>
+                      </tr>
+                   </thead>
+                   <tbody className={`divide-y ${isDarkMode ? 'divide-white/5' : 'divide-gray-200'}`}>
+                      {filteredSidekicks.length > 0 ? (
+                          filteredSidekicks.map(sk => (
+                             <tr key={sk.id} className={`${theme.tableRowHover} transition-colors`}>
+                                <td className="px-6 py-4">
+                                   <div className="flex items-center">
+                                        <div>
+                                             <div className={`font-bold ${theme.textMain} flex items-center gap-1`}>
+                                                {sk.name}
+                                                {sk.verifiedBadge && <CheckCircle size={14} className="text-[#CCFF00] fill-current"/>}
+                                             </div>
+                                             <div className="text-xs text-gray-500 font-mono">{sk.handle}</div>
+                                        </div>
+                                        {sk.flagged && (
+                                            <div className="ml-2 text-red-500" title="Flagged for suspicious activity">
+                                                 <AlertTriangle size={16}/>
+                                            </div>
+                                        )}
+                                   </div>
+                                </td>
+                                <td className="px-6 py-4"><Badge>{sk.tier}</Badge></td>
+                                <td className="px-6 py-4">
+                                    <Badge color={sk.level === 'VIP' ? 'gold' : 'gray'}>{sk.level}</Badge>
+                                </td>
+                                <td className="px-6 py-4 text-gray-500 font-mono">
+                                   {(sk.successRate || 0).toFixed(1)}%
+                                </td>
+                                <td className="px-6 py-4 text-right text-[#CCFF00] font-bold font-mono">{sk.totalExp.toLocaleString()}</td>
+                             </tr>
+                          ))
+                      ) : (
+                          <tr>
+                              <td colSpan="5" className="px-6 py-8 text-center text-gray-500 uppercase tracking-widest text-xs">
+                                  No sidekicks found matching search.
+                              </td>
+                          </tr>
+                      )}
+                   </tbody>
+                </table>
+             </div>
+          )}
+          
+          {currentView === 'vip-requests' && <VipRequestQueue requests={vipRequests} onApprove={handleApproveVip} onReject={handleRejectVip} theme={theme} />}
+
+          {currentView === 'ladderboard' && <Leaderboard sidekicks={sidekicks} theme={theme} />}
+
+          {currentView === 'broadcasts' && <BroadcastCenter broadcasts={broadcasts} onSend={handleSendBroadcast} theme={theme} isDarkMode={isDarkMode} />}
+
+          {currentView === 'create-task' && <TaskCreator onCreate={handleCreateTask} theme={theme} sidekicks={sidekicks} />}
+          
+          {currentView === 'analytics' && <IntelCenter theme={theme} analyticsData={analyticsData} systemAlerts={systemAlerts} isDarkMode={isDarkMode} onShowNotification={showNotification} />}
+
+        </main>
+      </div>
+
+      {notification && (
+        <div className={`fixed bottom-6 right-6 px-6 py-4 rounded-xl shadow-2xl text-white transform transition-all duration-300 translate-y-0 z-50 border ${
+          notification.type === 'success' ? 'bg-[#111] border-[#CCFF00] text-[#CCFF00]' : 'bg-[#111] border-red-500 text-red-500'
+        }`}>
+          <div className="flex items-center">
+            {notification.type === 'success' ? <CheckCircle size={20} className="mr-3" /> : <XCircle size={20} className="mr-3" />}
+            <span className="font-bold uppercase tracking-wider text-sm">{notification.message}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Wrapper to provide settings context
+export default function App() {
+  return (
+    <SystemSettingsProvider>
+      <SidekickCommandCenterInner />
+    </SystemSettingsProvider>
+  )
+}

@@ -1,0 +1,1344 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Home, 
+  Briefcase, 
+  Wallet, 
+  User, 
+  CheckCircle, 
+  Clock, 
+  AlertCircle, 
+  ChevronRight, 
+  Instagram, 
+  Facebook, 
+  Youtube, 
+  Upload, 
+  DollarSign, 
+  Star, 
+  ArrowLeft, 
+  Copy, 
+  ExternalLink, 
+  Camera, 
+  X, 
+  Bell, 
+  QrCode, 
+  Image as ImageIcon, 
+  ArrowRight, 
+  TrendingUp, 
+  Zap,
+  Loader2,
+  Trophy,
+  Crown,
+  ShieldCheck,
+  Lock,
+  Users,
+  Award,
+  MessageCircle,
+  Quote,
+  Radio
+} from 'lucide-react';
+
+// --- MOCK DATA ---
+
+// Extended User Model
+const INITIAL_USER = {
+  id: 'u1',
+  name: 'Sarah Creator',
+  handle: '@sarah_create',
+  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah&backgroundColor=b6e3f4',
+  follower_count: 6200, 
+  tier: 'Tier B', // Tiers still exist based on followers
+  platform: 'Instagram',
+  rating: 4.8,
+  success_rate: '98%',
+  balance: 145.50,
+  completed_tasks: 12,
+  payment_method: { type: 'TNG', account: '012-3456789' },
+  // NEW FIELDS
+  sidekick_level: 'premium', // 'premium' | 'vip'
+  vip_status: 'requirements_met', // 'none' | 'requirements_met' | 'payment_submitted' | 'active'
+  vip_expiry_date: null,
+  referral_code: 'SARAH88',
+  referral_count: 5, // Met requirement (5)
+  total_exp: 1250,
+  monthly_exp: 450,
+  rank_position: 14
+};
+
+const LEADERBOARD_DATA = [
+  { id: 'l1', name: 'Alex Wong', handle: '@alex_eats', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex', exp: 2100, rank: 1, vip: true },
+  { id: 'l2', name: 'Bella Cruz', handle: '@bella_style', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bella', exp: 1950, rank: 2, vip: true },
+  { id: 'l3', name: 'Kenji T', handle: '@kenji_tech', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Kenji', exp: 1820, rank: 3, vip: false },
+  // ... gap
+  { id: 'u1', name: 'Sarah Creator', handle: '@sarah_create', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah&backgroundColor=b6e3f4', exp: 450, rank: 14, vip: false },
+];
+
+const NOTIFICATIONS = [
+  { id: 1, type: 'exp', message: '+50 EXP gained from Spring Fashion.', time: '2h ago', read: false },
+  { id: 2, type: 'payment', message: 'Payment of RM 45.00 received.', time: '2h ago', read: false },
+  { id: 3, type: 'referral', message: 'New sidekick joined using your code!', time: '1d ago', read: true },
+  { id: 4, type: 'task', message: 'New VIP Campaign: Luxury Watch.', time: '1d ago', read: true },
+];
+
+const INITIAL_BROADCASTS = [
+  { id: 1, type: 'motivation', sender: 'Sidekick Mentor', message: "🚀 Success is not final, failure is not fatal: it is the courage to continue that counts. Keep grinding!", time: '10m ago' },
+  { id: 2, type: 'funny', sender: 'Community Mgr', message: "☕ I told my computer I needed a break, and now it won't stop sending me Kit-Kat ads.", time: '3h ago' },
+  { id: 3, type: 'system', sender: 'System Admin', message: "⚡ Double EXP Weekend starts this Friday! Prepare your content schedule.", time: '5h ago' }
+];
+
+const INITIAL_TASKS = [
+  {
+    id: 't1',
+    title: 'Summer Glow Campaign',
+    brand: 'GlowCosmetics',
+    platform: 'Instagram',
+    type: 'Story + Link',
+    reward: 50.00,
+    exp_reward: 50,
+    deadline: '2026-06-15',
+    slots_total: 50,
+    slots_taken: 42,
+    min_followers: 5000,
+    access_level: 'public',
+    description: 'Promote our new summer sunscreen line. Emphasis on non-greasy formula.',
+    instructions: ['Post a story holding the product.', 'Tag @glowcosmetics.', 'Link sticker to shop.'],
+    hashtags: ['#SummerGlow', '#GlowCosmetics'],
+    status: 'open'
+  },
+  {
+    id: 't2',
+    title: 'Luxury Watch Unboxing',
+    brand: 'Chronos',
+    platform: 'TikTok',
+    type: 'Video (30s)',
+    reward: 250.00,
+    exp_reward: 150,
+    deadline: '2026-06-25',
+    slots_total: 5,
+    slots_taken: 1,
+    min_followers: 20000,
+    access_level: 'vip_only', // VIP Only
+    description: 'Exclusive unboxing of the Chronos Elite. VIP Sidekicks only.',
+    instructions: ['Cinematic unboxing.', 'Wear the watch.', 'Mention "Elite Status".'],
+    hashtags: ['#ChronosElite', '#LuxuryLifestyle'],
+    status: 'open'
+  },
+  {
+    id: 't3',
+    title: 'Coffee Morning',
+    brand: 'BeanRoast',
+    platform: 'Facebook',
+    type: 'Photo Post',
+    reward: 25.00,
+    exp_reward: 25,
+    deadline: '2026-06-12',
+    slots_total: 100,
+    slots_taken: 65,
+    min_followers: 2000,
+    access_level: 'public',
+    description: 'Simple lifestyle shot with your morning coffee.',
+    instructions: ['Natural lighting.', 'Product visible.', 'Positive caption.'],
+    hashtags: ['#MorningBrew', '#BeanRoast'],
+    status: 'open'
+  }
+];
+
+// --- COMPONENTS ---
+
+const Badge = ({ children, color = 'blue', className = '', icon: Icon }) => {
+  const colors = {
+    blue: 'bg-blue-900/40 text-blue-300 border-blue-700',
+    green: 'bg-[#3D4421] text-[#CCFF00] border-[#CCFF00]', 
+    neon: 'bg-[#CCFF00] text-black border-[#CCFF00] shadow-[0_0_10px_rgba(204,255,0,0.3)]',
+    yellow: 'bg-yellow-900/40 text-yellow-300 border-yellow-700', 
+    purple: 'bg-purple-900/40 text-purple-300 border-purple-700',
+    gray: 'bg-gray-800 text-gray-400 border-gray-700',
+    red: 'bg-red-900/40 text-red-300 border-red-700',
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider border ${colors[color]} ${className} font-body`}>
+      {Icon && <Icon size={10} />}
+      {children}
+    </span>
+  );
+};
+
+const VerifiedBadge = ({ size = 16 }) => (
+  <div className={`bg-[#CCFF00] rounded-full flex items-center justify-center text-black shadow-[0_0_8px_#CCFF00]`} style={{ width: size, height: size }}>
+    <CheckCircle size={size * 0.7} strokeWidth={4} />
+  </div>
+);
+
+const PlatformIcon = ({ platform }) => {
+  switch (platform) {
+    case 'Instagram': return <Instagram size={16} className="text-pink-400" />;
+    case 'Facebook': return <Facebook size={16} className="text-blue-400" />;
+    case 'TikTok': return <div className="w-4 h-4 bg-white text-black rounded-full flex items-center justify-center text-[10px] font-bold">T</div>;
+    case 'Youtube': return <Youtube size={16} className="text-red-500" />;
+    default: return <Briefcase size={16} className="text-gray-400" />;
+  }
+};
+
+const StatusBadge = ({ status }) => {
+  switch (status) {
+    case 'applied': return <Badge color="blue">Applied</Badge>;
+    case 'accepted': return <Badge color="purple">In Progress</Badge>;
+    case 'submitted': return <Badge color="yellow">Under Review</Badge>;
+    case 'approved': return <Badge color="green">Action Required</Badge>;
+    case 'paid': return <Badge color="gray">Settled</Badge>;
+    case 'rejected': return <Badge color="red">Rejected</Badge>;
+    default: return <Badge color="gray">{status}</Badge>;
+  }
+};
+
+// --- MODALS / SUB-COMPONENTS ---
+
+// NEW: Individual Pop-out Modal for single messages
+const IncomingTransmissionModal = ({ message, onClose }) => (
+    <div className="absolute bottom-24 left-4 right-4 z-[60] animate-slide-up">
+        <div className="bg-[#1A1A1A] rounded-xl border border-[#CCFF00] shadow-[0_0_20px_rgba(204,255,0,0.2)] overflow-hidden">
+            <div className="bg-[#3D4421] px-4 py-2 flex justify-between items-center border-b border-[#CCFF00]">
+                <div className="flex items-center gap-2">
+                    <Radio size={16} className="text-[#CCFF00] animate-pulse" />
+                    <span className="text-xs font-bold text-[#CCFF00] uppercase tracking-widest">Incoming Transmission</span>
+                </div>
+                <button onClick={onClose}><X size={16} className="text-[#CCFF00] hover:text-white"/></button>
+            </div>
+            <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center border ${message.type === 'funny' ? 'bg-pink-900/30 border-pink-500 text-pink-400' : message.type === 'motivation' ? 'bg-blue-900/30 border-blue-500 text-blue-400' : 'bg-[#CCFF00]/20 border-[#CCFF00] text-[#CCFF00]'}`}>
+                             {message.type === 'motivation' ? <Zap size={12} /> : message.type === 'funny' ? <Quote size={12} /> : <ShieldCheck size={12} />}
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-wider">{message.sender}</span>
+                    </div>
+                    <span className="text-[9px] text-gray-500 font-mono">LIVE</span>
+                </div>
+                <p className="text-sm text-white font-medium leading-relaxed mb-4">
+                    {message.message}
+                </p>
+                <button 
+                    onClick={onClose}
+                    className="w-full py-2 bg-[#CCFF00] text-black text-xs font-bold uppercase tracking-widest rounded hover:bg-[#b3e600] flex items-center justify-center gap-2"
+                >
+                    <CheckCircle size={14} /> Acknowledge
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
+const BroadcastCenter = ({ broadcasts, onClose }) => (
+    <div className="absolute inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm" onClick={onClose}>
+        <div className="bg-[#1A1A1A] w-full max-w-md h-[80vh] rounded-t-2xl sm:rounded-2xl flex flex-col animate-slide-up border border-gray-700" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-[#262626] rounded-t-2xl">
+                <div>
+                    <h2 className="font-display text-2xl text-white uppercase tracking-wide flex items-center gap-2">
+                        <MessageCircle size={24} className="text-[#CCFF00]" /> HQ Broadcasts
+                    </h2>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Official Comms & Motivation</p>
+                </div>
+                <button onClick={onClose}><X size={24} className="text-gray-500 hover:text-white"/></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#121212]">
+                {broadcasts.map(msg => (
+                    <div key={msg.id} className="flex gap-3">
+                        <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center border ${msg.type === 'funny' ? 'bg-pink-900/30 border-pink-500 text-pink-400' : msg.type === 'motivation' ? 'bg-[#3D4421] border-[#CCFF00] text-[#CCFF00]' : 'bg-blue-900/30 border-blue-500 text-blue-400'}`}>
+                            {msg.type === 'motivation' ? <Zap size={14} /> : msg.type === 'funny' ? <Quote size={14} /> : <ShieldCheck size={14} />}
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${msg.type === 'funny' ? 'text-pink-400' : msg.type === 'motivation' ? 'text-[#CCFF00]' : 'text-blue-400'}`}>
+                                    {msg.sender}
+                                </span>
+                                <span className="text-[9px] text-gray-600 font-mono">{msg.time}</span>
+                            </div>
+                            <div className={`p-3 rounded-tr-xl rounded-bl-xl rounded-br-xl border text-sm leading-snug shadow-sm ${msg.time === 'Just now' ? 'bg-[#262626] border-[#CCFF00] text-white shadow-[0_0_10px_rgba(204,255,0,0.1)]' : 'bg-[#1A1A1A] border-gray-800 text-gray-300'}`}>
+                                {msg.message}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                
+                <div className="flex justify-center mt-8">
+                    <span className="text-[10px] text-gray-700 uppercase font-bold tracking-widest">End of Transmission</span>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const NotificationCenter = ({ notifications, onClose }) => (
+    <div className="absolute inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center backdrop-blur-sm" onClick={onClose}>
+        <div className="bg-[#1A1A1A] w-full max-w-md h-[80vh] rounded-t-2xl sm:rounded-2xl flex flex-col animate-slide-up border border-gray-700" onClick={e => e.stopPropagation()}>
+            <div className="p-5 border-b border-gray-800 flex justify-between items-center">
+                <h2 className="font-display text-2xl text-white uppercase tracking-wide">Notifications</h2>
+                <button onClick={onClose}><X size={24} className="text-gray-500 hover:text-white"/></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {notifications.map(notif => (
+                    <div key={notif.id} className={`p-4 rounded-xl border transition-colors ${notif.read ? 'bg-[#262626] border-gray-800' : 'bg-[#3D4421]/30 border-[#CCFF00]/50'}`}>
+                        <div className="flex items-start space-x-3">
+                            <div className={`mt-1.5 w-1.5 h-1.5 rounded-full ${notif.read ? 'bg-gray-600' : 'bg-[#CCFF00]'}`}></div>
+                            <div>
+                                <p className="text-sm font-body font-medium text-gray-200 mb-1 leading-snug">{notif.message}</p>
+                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{notif.time}</span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
+const QRModal = ({ onClose }) => (
+    <div className="absolute inset-0 bg-black/90 z-50 flex items-center justify-center px-4 backdrop-blur-md" onClick={onClose}>
+        <div className="bg-[#1A1A1A] w-full max-w-xs rounded-2xl p-8 flex flex-col items-center animate-slide-up border border-gray-700" onClick={e => e.stopPropagation()}>
+            <h3 className="font-display text-2xl text-white uppercase tracking-wide mb-6">Payment Link</h3>
+            <div className="w-56 h-56 bg-white mb-6 p-2 rounded-lg flex items-center justify-center">
+                <QrCode size={180} className="text-black" />
+            </div>
+            <p className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-8">Scan via TNG eWallet</p>
+            <button onClick={onClose} className="w-full py-4 bg-[#262626] hover:bg-[#333] text-white text-xs font-bold uppercase tracking-widest rounded-full border border-gray-600">Close Panel</button>
+        </div>
+    </div>
+);
+
+const ClaimQRModal = ({ claimingApp, onClose, onConfirm }) => {
+    if (!claimingApp) return null;
+    return (
+      <div className="absolute inset-0 bg-black/95 z-[60] flex items-center justify-center px-4 backdrop-blur-md" onClick={onClose}>
+        <div className="bg-[#1A1A1A] w-full max-w-xs rounded-2xl p-6 flex flex-col items-center animate-slide-up border border-[#CCFF00]" onClick={e => e.stopPropagation()}>
+            <div className="mb-4 bg-[#3D4421] p-4 rounded-full border border-[#CCFF00]">
+              <DollarSign size={32} className="text-[#CCFF00]" />
+            </div>
+            <h3 className="font-display text-3xl text-white uppercase tracking-wide mb-1">Claim Reward</h3>
+            <p className="text-center text-xs font-body text-gray-400 mb-8 max-w-[200px]">Scan below to initialize transfer for <span className="text-white font-bold">{claimingApp.taskTitle}</span></p>
+            
+            <div className="w-56 h-56 bg-white mb-8 rounded-none flex flex-col items-center justify-center relative p-2">
+                <QrCode size={190} className="text-black" />
+                <div className="absolute -inset-1 border-2 border-[#CCFF00] pointer-events-none"></div>
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#1A1A1A] border border-[#CCFF00]"></div>
+                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#1A1A1A] border border-[#CCFF00]"></div>
+            </div>
+
+            <div className="text-center mb-8">
+               <span className="block text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Transfer Amount</span>
+               <div className="flex flex-col items-center">
+                   <span className="text-4xl font-display text-[#CCFF00]">RM {claimingApp.reward.toFixed(2)}</span>
+                   <span className="text-xs font-bold text-[#CCFF00] mt-1 flex items-center gap-1"><Trophy size={10}/> +{claimingApp.exp} EXP</span>
+               </div>
+            </div>
+            
+            <button 
+              onClick={onConfirm} 
+              className="w-full py-4 bg-[#CCFF00] hover:bg-[#b3e600] text-black font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-2"
+            >
+              <CheckCircle size={18} /> Confirm Receipt
+            </button>
+        </div>
+      </div>
+    );
+};
+
+const VipPaymentModal = ({ onClose, onConfirm }) => (
+    <div className="absolute inset-0 bg-black/95 z-[60] flex items-center justify-center px-4 backdrop-blur-md" onClick={onClose}>
+        <div className="bg-[#1A1A1A] w-full max-w-xs rounded-2xl p-6 flex flex-col items-center animate-slide-up border border-[#CCFF00]" onClick={e => e.stopPropagation()}>
+            <div className="mb-4 bg-[#3D4421] p-4 rounded-full border border-[#CCFF00]">
+              <Crown size={32} className="text-[#CCFF00]" />
+            </div>
+            <h3 className="font-display text-2xl text-white uppercase tracking-wide mb-1">VIP Upgrade</h3>
+            <p className="text-center text-xs font-body text-gray-400 mb-6 max-w-[200px]">Scan DuitNow QR to pay annual fee.</p>
+            
+            <div className="w-56 h-56 bg-white mb-8 rounded-none flex flex-col items-center justify-center relative p-2">
+                <QrCode size={190} className="text-black" />
+                <div className="absolute -inset-1 border-2 border-[#CCFF00] pointer-events-none"></div>
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-[#1A1A1A] border border-[#CCFF00]"></div>
+                <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-[#1A1A1A] border border-[#CCFF00]"></div>
+            </div>
+
+            <div className="text-center mb-8">
+               <span className="block text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Amount Due</span>
+               <span className="text-4xl font-display text-[#CCFF00]">RM 15.00</span>
+            </div>
+            
+            <button 
+              onClick={onConfirm} 
+              className="w-full py-4 bg-[#CCFF00] hover:bg-[#b3e600] text-black font-bold uppercase tracking-widest rounded-full flex items-center justify-center gap-2"
+            >
+              <CheckCircle size={18} /> Payment Complete
+            </button>
+        </div>
+    </div>
+);
+
+const TaskDetailView = ({ task, onClose, onApply, onSimulateApproval, onSubmitProof, userApplications, currentUser, onClaim }) => {
+    const [proofLink, setProofLink] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [hasScreenshot, setHasScreenshot] = useState(false);
+
+    const liveApp = userApplications.find(a => a.taskId === task.id);
+    const status = liveApp ? liveApp.status : (task.status || 'open');
+    const isApplied = !!liveApp;
+    const appId = liveApp?.id;
+
+    const isActionable = status === 'accepted';
+    const isUnderReview = status === 'submitted';
+    const isApproved = status === 'approved';
+    const isVipLocked = task.access_level === 'vip_only' && currentUser.sidekick_level !== 'vip';
+
+    const submitHandler = () => {
+      setSubmitting(true);
+      setTimeout(() => {
+        onSubmitProof(appId, { link: proofLink, type: 'link' });
+        setSubmitting(false);
+      }, 1500);
+    };
+
+    return (
+      <div className="absolute inset-0 bg-[#121212] z-50 flex flex-col animate-slide-up">
+        {/* Detail Header */}
+        <div className="px-4 py-4 border-b border-gray-800 flex items-center justify-between bg-[#1A1A1A] sticky top-0 z-10">
+          <button onClick={onClose} className="p-2 -ml-2 rounded-full hover:bg-gray-800 text-gray-400">
+            <ArrowLeft size={24} />
+          </button>
+          <span className="font-body font-bold text-gray-200 uppercase text-sm tracking-wide">{task.brand}</span>
+          <div className="w-8" />
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 pb-32">
+          {/* Hero Section */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <Badge color="blue">{task.platform}</Badge>
+              <div className="text-right">
+                  <span className="font-display text-3xl text-[#CCFF00] block">RM {task.reward}</span>
+                  <span className="text-[10px] text-[#CCFF00] font-bold uppercase flex items-center justify-end gap-1"><Trophy size={10}/> +{task.exp_reward} EXP</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-4">
+               <h1 className="text-3xl font-display text-white uppercase tracking-wide leading-tight">{task.title}</h1>
+               {task.access_level === 'vip_only' && <Badge color="neon" icon={Crown}>VIP</Badge>}
+            </div>
+            <p className="text-gray-400 font-body text-sm leading-relaxed border-l-2 border-gray-700 pl-4">{task.description}</p>
+          </div>
+
+          {/* Status Tracker */}
+          {(isApplied || status !== 'open') && (
+            <div className="bg-[#1A1A1A] p-6 rounded-xl mb-8 border border-gray-800">
+              <h3 className="font-bold text-gray-500 uppercase text-[10px] tracking-widest mb-6">Mission Progress</h3>
+              <div className="relative flex justify-between items-center px-2">
+                <div className="absolute left-0 right-0 top-1/2 h-0.5 bg-gray-800 -z-10" />
+                
+                {['accepted', 'submitted', 'approved', 'paid'].map((step, i) => {
+                   const steps = ['accepted', 'submitted', 'approved', 'paid'];
+                   const currentIdx = steps.indexOf(status);
+                   const stepIdx = steps.indexOf(step);
+                   const completed = stepIdx <= currentIdx;
+                   
+                   return (
+                     <div key={step} className="flex flex-col items-center bg-[#1A1A1A] px-2">
+                       <div className={`w-3 h-3 rounded-full flex items-center justify-center border-2 
+                         ${completed ? 'bg-[#CCFF00] border-[#CCFF00]' : 'bg-[#1A1A1A] border-gray-600'}`}>
+                       </div>
+                       <span className={`text-[9px] mt-2 font-bold uppercase tracking-widest ${completed ? 'text-[#CCFF00]' : 'text-gray-600'}`}>{step}</span>
+                     </div>
+                   );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Locked Content Warning */}
+          {!isApplied && status === 'open' ? (
+             <div className="bg-[#3D4421]/20 p-5 rounded-xl border border-[#CCFF00]/30 mb-8">
+               <div className="flex items-start">
+                 {isVipLocked ? <Lock className="text-red-500 mr-3 mt-0.5" size={20} /> : <AlertCircle className="text-[#CCFF00] mr-3 mt-0.5" size={20} />}
+                 <div>
+                   <h4 className={`font-bold uppercase text-xs tracking-wider mb-2 ${isVipLocked ? 'text-red-500' : 'text-[#CCFF00]'}`}>{isVipLocked ? 'Clearance Restricted' : 'Pre-Mission Brief'}</h4>
+                   <p className="text-xs text-gray-400 leading-relaxed">
+                     {isVipLocked 
+                       ? "This operation is classified for VIP Sidekicks only. Upgrade your clearance level to access." 
+                       : `Verification required. Ensure ${task.platform} profile is public with ${task.min_followers}+ followers.`}
+                   </p>
+                 </div>
+               </div>
+             </div>
+          ) : (
+             <div className="space-y-8">
+               <section>
+                 <div className="flex items-center space-x-2 mb-4">
+                    <div className="h-4 w-1 bg-[#CCFF00]"></div>
+                    <h3 className="font-display text-xl text-white uppercase tracking-wide">Directives</h3>
+                 </div>
+                 <ul className="space-y-3">
+                   {task.instructions.map((inst, i) => (
+                     <li key={i} className="flex items-start text-sm text-gray-300 bg-[#262626] p-4 rounded-lg border border-gray-800">
+                       <span className="mr-3 font-display text-xl text-gray-600">0{i+1}</span> {inst}
+                     </li>
+                   ))}
+                 </ul>
+               </section>
+
+               <section>
+                 <div className="flex items-center space-x-2 mb-4">
+                    <div className="h-4 w-1 bg-[#CCFF00]"></div>
+                    <h3 className="font-display text-xl text-white uppercase tracking-wide">Required Assets</h3>
+                 </div>
+                 <div className="space-y-4">
+                    <div className="p-4 border border-dashed border-gray-700 rounded-lg bg-[#1A1A1A]">
+                      <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-3">Hashtags</span>
+                      <div className="flex flex-wrap gap-2">
+                        {task.hashtags.map(tag => (
+                          <span key={tag} className="text-[10px] font-bold text-blue-300 bg-blue-900/30 border border-blue-800 px-2 py-1 rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="p-4 border border-dashed border-gray-700 rounded-lg bg-[#1A1A1A] flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block mb-1">Target Account</span>
+                        <span className="font-bold text-white text-sm">@{(task.brand || '').toLowerCase()}</span>
+                      </div>
+                      <Copy size={16} className="text-gray-500 hover:text-white cursor-pointer" />
+                    </div>
+                 </div>
+               </section>
+             </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="fixed bottom-0 left-0 right-0 p-5 bg-[#1A1A1A] border-t border-gray-800 z-20">
+           <div className="max-w-md mx-auto">
+             {!isApplied && status === 'open' && (
+               <button 
+                onClick={() => onApply(task)}
+                disabled={isVipLocked}
+                className={`w-full py-4 rounded-full font-bold uppercase tracking-widest text-sm transition-all flex justify-center items-center
+                    ${isVipLocked 
+                        ? 'bg-gray-800 text-gray-500 cursor-not-allowed border border-gray-700' 
+                        : 'bg-[#CCFF00] text-black hover:bg-[#b3e600] active:scale-[0.98] shadow-[0_0_15px_rgba(204,255,0,0.3)]'}`}
+               >
+                 {isVipLocked ? <><Lock size={16} className="mr-2"/> Locked</> : 'Accept Mission'}
+               </button>
+             )}
+
+             {isActionable && (
+               <div className="space-y-4">
+                 <div className="flex space-x-2">
+                    <input 
+                      type="text" 
+                      placeholder="Paste mission URL..." 
+                      className="flex-1 bg-[#262626] border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:ring-1 focus:ring-[#CCFF00] focus:border-[#CCFF00] outline-none placeholder-gray-600"
+                      value={proofLink}
+                      onChange={(e) => setProofLink(e.target.value)}
+                    />
+                 </div>
+                 
+                 <div 
+                   onClick={() => setHasScreenshot(!hasScreenshot)}
+                   className={`flex items-center justify-center p-4 rounded-xl border border-dashed cursor-pointer transition-colors ${hasScreenshot ? 'bg-[#3D4421]/40 border-[#CCFF00] text-[#CCFF00]' : 'bg-[#262626] border-gray-600 text-gray-400 hover:border-gray-400'}`}
+                 >
+                    {hasScreenshot ? (
+                        <>
+                            <CheckCircle size={18} className="mr-2" />
+                            <span className="text-xs font-bold uppercase tracking-wide">Evidence Attached</span>
+                        </>
+                    ) : (
+                        <>
+                            <ImageIcon size={18} className="mr-2" />
+                            <span className="text-xs font-bold uppercase tracking-wide">Upload Evidence</span>
+                        </>
+                    )}
+                 </div>
+
+                 <button 
+                   onClick={submitHandler}
+                   disabled={!proofLink || submitting}
+                   className={`w-full py-4 rounded-full font-bold uppercase tracking-widest text-sm flex justify-center items-center transition-all
+                     ${!proofLink ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-[#CCFF00] text-black hover:bg-[#b3e600] active:scale-[0.98] shadow-lg'}`}
+                 >
+                   {submitting ? <><Loader2 className="animate-spin mr-2" size={18}/> Verifying...</> : 'Submit Intel'}
+                 </button>
+               </div>
+             )}
+
+             {isUnderReview && (
+                <div className="text-center">
+                   <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-3">Submission Under Analysis</p>
+                   <button 
+                     onClick={() => onSimulateApproval(appId)}
+                     className="text-[10px] text-gray-600 underline uppercase tracking-widest hover:text-white"
+                   >
+                     (Dev: Force Approve)
+                   </button>
+                </div>
+             )}
+
+             {isApproved && (
+                <button 
+                  onClick={() => onClaim(liveApp)}
+                  className="w-full bg-[#CCFF00] text-black py-4 rounded-full font-bold uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(204,255,0,0.4)] flex justify-center items-center gap-2 animate-pulse"
+                >
+                  <DollarSign size={20} /> Claim Bounty
+                </button>
+             )}
+
+             {status === 'paid' && (
+                <div className="w-full bg-[#3D4421] text-[#CCFF00] py-4 rounded-full font-bold uppercase tracking-widest text-sm text-center border border-[#CCFF00] flex justify-center items-center gap-2">
+                   <CheckCircle size={18} /> Funds Transferred
+                </div>
+             )}
+           </div>
+        </div>
+      </div>
+    );
+};
+
+// --- MAIN APP ---
+
+export default function SidekickApp() {
+  const [user, setUser] = useState(INITIAL_USER);
+  const [activeTab, setActiveTab] = useState('feed');
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showQR, setShowQR] = useState(false); 
+  const [claimingApp, setClaimingApp] = useState(null); 
+  const [myApplications, setMyApplications] = useState([]);
+  const [notificationMsg, setNotificationMsg] = useState(null);
+  const [showVipPaymentModal, setShowVipPaymentModal] = useState(false);
+  const [showBroadcasts, setShowBroadcasts] = useState(false);
+  const [activeBroadcast, setActiveBroadcast] = useState(null);
+  const [broadcasts, setBroadcasts] = useState(INITIAL_BROADCASTS);
+  
+  useEffect(() => {
+    setMyApplications([
+      {
+        id: 'app_1',
+        taskId: 't_past_1',
+        taskTitle: 'Spring Fashion Haul',
+        brand: 'StyleCo',
+        reward: 45.00,
+        exp: 45,
+        status: 'paid',
+        date: '2026-05-20',
+        platform: 'Instagram'
+      },
+      {
+        id: 'app_2',
+        taskId: 't_past_2',
+        taskTitle: 'Energy Drink Boost',
+        brand: 'VoltEnergy',
+        reward: 30.00,
+        exp: 30,
+        status: 'approved', 
+        date: '2026-06-01',
+        platform: 'TikTok'
+      }
+    ]);
+
+    // Simulate incoming broadcast from Admin
+    const timer = setTimeout(() => {
+        const newBroadcast = {
+            id: Date.now(),
+            type: 'system',
+            sender: 'Admin HQ',
+            message: "📢 ALERT: New flash campaign available! Limited slots. Check your feed now!",
+            time: 'Just now'
+        };
+        setBroadcasts(prev => [newBroadcast, ...prev]);
+        setActiveBroadcast(newBroadcast); // Trigger single pop-out
+    }, 5000); // 5 seconds delay
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const triggerToast = (message) => {
+    setNotificationMsg(message);
+    setTimeout(() => setNotificationMsg(null), 3000);
+  };
+
+  const triggerTestBroadcast = () => {
+    const types = ['motivation', 'funny', 'system'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const messages = {
+        motivation: "🔥 Keep pushing! You're one task away from the leaderboard.",
+        funny: "🐢 Why did the turtle cross the road? To get to the Sidekick app!",
+        system: "⚠️ Maintenance scheduled for 3AM. Plan your uploads accordingly."
+    };
+    
+    const newBroadcast = {
+        id: Date.now(),
+        type: type,
+        sender: type === 'system' ? 'System Admin' : (type === 'funny' ? 'Community Mgr' : 'Sidekick Mentor'),
+        message: messages[type],
+        time: 'Just now'
+    };
+    
+    setBroadcasts(prev => [newBroadcast, ...prev]);
+    setActiveBroadcast(newBroadcast);
+  };
+
+  const handleApply = (task) => {
+    if (task.access_level === 'vip_only' && user.sidekick_level !== 'vip') {
+      triggerToast("Access Denied: VIP Clearance Required");
+      return;
+    }
+    
+    if (myApplications.find(app => app.taskId === task.id)) return;
+
+    const newApplication = {
+      id: `app_${Date.now()}`,
+      taskId: task.id,
+      taskTitle: task.title,
+      brand: task.brand,
+      reward: task.reward,
+      exp: task.exp_reward,
+      status: 'accepted',
+      date: new Date().toISOString().split('T')[0],
+      platform: task.platform,
+      proof: null
+    };
+
+    setMyApplications([newApplication, ...myApplications]);
+    triggerToast(`Successfully applied to ${task.title}!`);
+    setActiveTab('tasks');
+    setSelectedTask(null); 
+  };
+
+  const handleSubmitProof = (appId, proofData) => {
+    setMyApplications(prev => prev.map(app => {
+      if (app.id === appId) {
+        return { ...app, status: 'submitted', proof: proofData };
+      }
+      return app;
+    }));
+    triggerToast('Proof submitted successfully!');
+  };
+
+  const handleSimulateApproval = (appId) => {
+    setMyApplications(prev => prev.map(app => 
+      app.id === appId ? { ...app, status: 'approved' } : app
+    ));
+    triggerToast('System approved your post!');
+  };
+
+  const handleConfirmClaim = () => {
+    if (!claimingApp) return;
+    setMyApplications(prev => prev.map(app => 
+      app.id === claimingApp.id ? { ...app, status: 'paid' } : app
+    ));
+    
+    // Update User State (Simulated Backend)
+    setUser(prev => ({
+      ...prev,
+      balance: prev.balance + claimingApp.reward,
+      total_exp: prev.total_exp + claimingApp.exp,
+      monthly_exp: prev.monthly_exp + claimingApp.exp,
+      completed_tasks: prev.completed_tasks + 1
+    }));
+
+    triggerToast(`RM ${claimingApp.reward.toFixed(2)} + ${claimingApp.exp} EXP claimed!`);
+    setClaimingApp(null);
+  };
+
+  const handleVipRequest = () => {
+    setShowVipPaymentModal(false);
+    setUser(prev => ({ ...prev, vip_status: 'payment_submitted' }));
+    triggerToast("Payment submitted for review.");
+    setTimeout(() => {
+      // Auto-approve for demo
+      setUser(prev => ({ 
+        ...prev, 
+        vip_status: 'active', 
+        sidekick_level: 'vip',
+        vip_expiry_date: '2027-02-18'
+      }));
+      triggerToast("VIP STATUS APPROVED! Welcome to Elite.");
+    }, 3000);
+  };
+
+  // --- SCREENS ---
+
+  const TaskFeed = () => {
+    const eligibleTasks = INITIAL_TASKS.filter(t => user.follower_count >= t.min_followers);
+    
+    const topPayingTask = useMemo(() => {
+        if (eligibleTasks.length === 0) return null;
+        return [...eligibleTasks].sort((a, b) => b.reward - a.reward)[0];
+    }, [eligibleTasks]);
+
+    return (
+      <div className="space-y-4 pb-20">
+        <header className="flex justify-between items-center mb-6 pt-2">
+          <div>
+            <h1 className="text-4xl font-display text-white uppercase tracking-wide">Task Feed</h1>
+            <p className="text-xs font-body font-bold text-[#CCFF00] uppercase tracking-wider">Sidekick HQ</p>
+          </div>
+          <div className="flex items-center space-x-3">
+             <button 
+               onClick={triggerTestBroadcast}
+               className="bg-gray-800 text-[9px] font-bold text-gray-400 border border-gray-600 px-2 py-1 rounded hover:bg-gray-700 hover:text-white transition-colors"
+             >
+               Test Msg
+             </button>
+             <button 
+                onClick={() => setShowBroadcasts(true)}
+                className="relative p-2 bg-[#262626] rounded-full text-gray-300 hover:text-[#CCFF00] border border-gray-700 hover:border-[#CCFF00] transition-colors"
+             >
+                <MessageCircle size={20} />
+             </button>
+             <button 
+                onClick={() => setShowNotifications(true)}
+                className="relative p-2 bg-[#262626] rounded-full text-gray-300 hover:text-[#CCFF00] border border-gray-700 hover:border-[#CCFF00] transition-colors"
+             >
+                <Bell size={20} />
+                <span className="absolute top-1 right-2 w-2 h-2 bg-[#CCFF00] rounded-full"></span>
+             </button>
+          </div>
+        </header>
+
+        {/* Top Paying Task Banner */}
+        {topPayingTask && (
+             <div 
+                onClick={() => setSelectedTask(topPayingTask)}
+                className="bg-[#3D4421] border border-[#CCFF00] rounded-xl p-0 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-transform group"
+             >
+                <div className="absolute top-0 right-0 p-4 opacity-20 text-[#CCFF00]">
+                    <TrendingUp size={100} />
+                </div>
+                
+                <div className="bg-[#CCFF00] text-black px-4 py-1 flex justify-between items-center">
+                    <span className="font-display uppercase tracking-wider text-sm flex items-center gap-2">
+                      <Zap size={14} fill="black" /> Featured Op
+                    </span>
+                    <span className="text-xs font-bold">EXP +{topPayingTask.exp_reward}</span>
+                </div>
+
+                <div className="relative z-10 p-5">
+                    <div className="flex justify-between items-start mb-2">
+                         <div className="flex flex-col">
+                            <span className="font-display text-4xl text-white tracking-tight">RM {topPayingTask.reward}</span>
+                            <span className="text-[10px] uppercase text-gray-300 tracking-wider font-body">Reward Pool</span>
+                         </div>
+                    </div>
+                    <div className="h-px w-full bg-[#CCFF00]/30 my-3"></div>
+                    <h3 className="text-xl font-body font-bold text-white uppercase mb-1">{topPayingTask.title}</h3>
+                    <p className="text-[#CCFF00] text-sm mb-3 font-body">{topPayingTask.brand}</p>
+                    
+                    <div className="flex items-center text-xs font-bold text-gray-400 font-body uppercase tracking-wider">
+                        <Clock size={12} className="mr-1 text-[#CCFF00]"/> Expires {new Date(topPayingTask.deadline).toLocaleDateString(undefined, {month:'short', day:'numeric'})}
+                    </div>
+                </div>
+             </div>
+        )}
+
+        <div className="flex items-center space-x-2 mb-2 mt-6">
+            <div className="h-4 w-1 bg-[#CCFF00]"></div>
+            <h3 className="font-display text-xl text-white uppercase tracking-wide">Available Ops</h3>
+        </div>
+
+        <div className="space-y-3">
+          {eligibleTasks.map(task => {
+            const application = myApplications.find(app => app.taskId === task.id);
+            const status = application ? application.status : null;
+            const isCompleted = status === 'paid';
+            const isVipLocked = task.access_level === 'vip_only' && user.sidekick_level !== 'vip';
+            
+            return (
+              <div 
+                key={task.id} 
+                onClick={() => setSelectedTask(task)}
+                className={`p-4 rounded-xl border transition-all cursor-pointer relative overflow-hidden group
+                    ${isCompleted ? 'bg-[#121212] border-gray-800 opacity-60' : 'bg-[#262626] border-gray-700 hover:border-gray-500'}`}
+              >
+                {/* VIP Pattern Overlay */}
+                {task.access_level === 'vip_only' && (
+                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none"></div>
+                )}
+
+                <div className="flex justify-between items-start mb-2 pl-2 relative z-10">
+                  <div className="flex items-center space-x-3">
+                    <span className={`p-2 rounded-lg ${isCompleted ? 'bg-gray-800 grayscale' : 'bg-[#1A1A1A] border border-gray-700'}`}>
+                      <PlatformIcon platform={task.platform} />
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className={`font-body font-bold uppercase text-sm tracking-wide ${isCompleted ? 'text-gray-500 line-through' : 'text-white'}`}>{task.title}</h4>
+                        {task.access_level === 'vip_only' && <Badge color="neon" icon={Crown}>VIP</Badge>}
+                      </div>
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wider">{task.brand}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`block font-display text-xl tracking-wide ${isCompleted ? 'text-gray-600' : 'text-[#CCFF00]'}`}>RM {task.reward}</span>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between items-center mt-4 pl-2 relative z-10">
+                  <div className="flex space-x-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    <span className="flex items-center text-[#CCFF00]"><Trophy size={10} className="mr-1"/> +{task.exp_reward} EXP</span>
+                    <span className="flex items-center"><User size={10} className="mr-1"/> {task.slots_total - task.slots_taken} Slots</span>
+                  </div>
+                  {status ? (
+                    <StatusBadge status={status} />
+                  ) : isVipLocked ? (
+                    <span className="text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1"><Lock size={10} /> VIP Only</span>
+                  ) : (
+                    <button className="text-[10px] uppercase font-bold text-[#1A1A1A] bg-white px-4 py-1.5 rounded-full border border-white hover:bg-[#CCFF00] hover:border-[#CCFF00] transition-colors">
+                      View Intel
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const LeaderboardScreen = () => {
+    return (
+      <div className="pb-20">
+        <header className="flex justify-between items-center mb-6 pt-2">
+          <h1 className="text-4xl font-display text-white uppercase tracking-wide">Leaderboard</h1>
+        </header>
+
+        <div className="bg-[#262626] rounded-xl border border-gray-700 p-6 mb-8 text-center relative overflow-hidden">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-[#CCFF00] rounded-full blur-[60px] opacity-10"></div>
+           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Your Monthly Rank</p>
+           <h2 className="text-6xl font-display text-[#CCFF00] mb-2">#{user.rank_position}</h2>
+           <p className="text-xs text-gray-400">Top 15% of Sidekicks</p>
+        </div>
+
+        <div className="flex items-center space-x-2 mb-4">
+            <div className="h-4 w-1 bg-[#CCFF00]"></div>
+            <h3 className="font-display text-xl text-white uppercase tracking-wide">Top 50 Agents</h3>
+        </div>
+
+        <div className="space-y-3">
+          {LEADERBOARD_DATA.map((entry) => (
+             <div key={entry.id} className={`p-4 rounded-xl border flex items-center justify-between ${entry.id === user.id ? 'bg-[#3D4421] border-[#CCFF00]' : 'bg-[#1A1A1A] border-gray-800'}`}>
+                <div className="flex items-center gap-4">
+                  <span className={`font-display text-2xl w-8 ${entry.rank <= 3 ? 'text-[#CCFF00]' : 'text-gray-600'}`}>#{entry.rank}</span>
+                  <div className="relative">
+                    <img src={entry.avatar} alt={entry.name} className="w-10 h-10 rounded-full bg-gray-700" />
+                    {entry.vip && <div className="absolute -bottom-1 -right-1"><VerifiedBadge size={12} /></div>}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm uppercase">{entry.name} {entry.id === user.id && '(You)'}</h4>
+                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{entry.handle}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="block font-display text-lg text-white">{entry.exp}</span>
+                  <span className="text-[9px] text-[#CCFF00] font-bold uppercase tracking-widest">EXP</span>
+                </div>
+             </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const WalletScreen = () => {
+    // Merge Paid Tasks and manual EXP entries if any (in real app they'd be unified)
+    // For now we just show paid/approved tasks
+    const history = myApplications.filter(app => ['paid', 'approved'].includes(app.status));
+    
+    const pendingBalance = history
+        .filter(app => app.status === 'approved')
+        .reduce((sum, app) => sum + app.reward, 0);
+
+    return (
+      <div className="pb-20">
+         <h1 className="text-4xl font-display text-white uppercase tracking-wide mb-6 pt-2">Earnings</h1>
+         
+         <div className="bg-[#262626] border border-gray-700 p-8 rounded-2xl relative overflow-hidden mb-8 shadow-lg">
+           <div className="absolute top-0 right-0 w-32 h-32 bg-[#CCFF00] rounded-full blur-[80px] opacity-10"></div>
+           
+           <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2 font-body">Total Disbursed</p>
+           <h2 className="text-6xl font-display text-[#CCFF00] tracking-tight">RM {user.balance.toFixed(2)}</h2>
+           
+           <div className="mt-6 flex items-center gap-3">
+             <div className="bg-[#3D4421] px-3 py-1 rounded text-[#CCFF00] text-[10px] font-bold uppercase tracking-wider border border-[#CCFF00]/30 flex items-center">
+                <Clock size={10} className="mr-1"/> RM {pendingBalance.toFixed(2)} Pending
+             </div>
+             <div className="bg-[#1A1A1A] px-3 py-1 rounded text-purple-400 text-[10px] font-bold uppercase tracking-wider border border-purple-900 flex items-center">
+                <Trophy size={10} className="mr-1"/> {user.total_exp} Total EXP
+             </div>
+           </div>
+         </div>
+
+         {/* Payout Method */}
+         <div className="bg-[#1A1A1A] p-5 rounded-xl border border-gray-800 mb-8">
+           <div className="flex items-center justify-between mb-4">
+             <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Payout Method</span>
+             <span className="text-[#CCFF00] text-[10px] font-bold uppercase tracking-widest border-b border-[#CCFF00] cursor-pointer">Configure</span>
+           </div>
+           <div className="flex items-center space-x-4">
+             <div className="w-12 h-12 bg-blue-900/30 border border-blue-700 rounded-lg flex items-center justify-center text-blue-400 font-display text-xl">
+               TnG
+             </div>
+             <div>
+               <p className="font-body font-bold text-white text-sm uppercase">Touch 'n Go eWallet</p>
+               <p className="text-xs text-gray-500 font-mono mt-1">{user.payment_method.account}</p>
+             </div>
+           </div>
+         </div>
+
+         {/* Ledger */}
+         <div className="flex items-center space-x-2 mb-4">
+            <div className="h-4 w-1 bg-gray-600"></div>
+            <h3 className="font-display text-xl text-white uppercase tracking-wide">Transaction Ledger</h3>
+         </div>
+         
+         <div className="space-y-0 divide-y divide-gray-800 border border-gray-800 rounded-xl overflow-hidden bg-[#1A1A1A]">
+           {history.length > 0 ? history.map((item) => (
+             <div key={item.id} className="flex justify-between items-center p-4 hover:bg-[#262626] transition-colors">
+               <div className="flex items-center space-x-4">
+                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.status === 'paid' ? 'bg-[#3D4421] text-[#CCFF00]' : 'bg-yellow-900/30 text-yellow-500'}`}>
+                   {item.status === 'paid' ? <CheckCircle size={14}/> : <Clock size={14}/>}
+                 </div>
+                 <div>
+                    <p className="font-body font-bold text-white text-xs uppercase tracking-wide">{item.taskTitle}</p>
+                    <p className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">{item.date}</p>
+                 </div>
+               </div>
+               <div className="text-right">
+                 <p className="font-display text-lg text-white tracking-wide">+RM {item.reward.toFixed(2)}</p>
+                 <p className="text-[9px] uppercase font-bold text-[#CCFF00] tracking-widest">+{item.exp} EXP</p>
+               </div>
+             </div>
+           )) : (
+             <div className="p-8 text-center text-gray-500 text-xs uppercase tracking-widest">No transactions yet</div>
+           )}
+         </div>
+      </div>
+    );
+  };
+
+  const ProfileScreen = () => (
+    <div className="pb-20">
+      <div className="flex flex-col items-center mb-10 pt-4 relative">
+        <div className="relative mb-5">
+            <div className="w-28 h-28 rounded-full bg-[#262626] overflow-hidden border-2 border-[#CCFF00] p-1 shadow-[0_0_20px_rgba(204,255,0,0.15)]">
+              <img src={user.avatar} alt="Profile" className="w-full h-full object-cover rounded-full" />
+            </div>
+            {user.sidekick_level === 'vip' && (
+                <div className="absolute bottom-0 left-0 z-10 bg-[#121212] rounded-full p-1 border border-[#121212]">
+                    <VerifiedBadge size={28} />
+                </div>
+            )}
+        </div>
+        
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="text-3xl font-display text-white uppercase tracking-wide">{user.name}</h1>
+        </div>
+        
+        <p className="text-gray-500 text-xs font-mono mb-3">{user.handle}</p>
+        <div className="flex gap-2">
+          <Badge color={user.sidekick_level === 'vip' ? 'neon' : 'gray'}>
+             SIDEKICK {user.sidekick_level}
+          </Badge>
+          <Badge color="purple">Rank #{user.rank_position}</Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="bg-[#262626] p-4 rounded-xl border border-gray-700 text-center">
+          <span className="block text-3xl font-display text-white flex items-center justify-center gap-1">
+             <Trophy size={18} className="text-[#CCFF00]"/> {user.total_exp}
+          </span>
+          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Total EXP</span>
+        </div>
+        <div className="bg-[#262626] p-4 rounded-xl border border-gray-700 text-center">
+          <span className="block text-3xl font-display text-[#CCFF00]">{user.success_rate}</span>
+          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Success Ratio</span>
+        </div>
+      </div>
+
+      {/* REFERRAL SYSTEM */}
+      <div className="bg-[#1A1A1A] p-5 rounded-xl border border-dashed border-gray-700 mb-8">
+         <div className="flex justify-between items-center mb-4">
+             <h3 className="font-bold text-gray-400 uppercase text-xs tracking-wider">Referral Code</h3>
+             <Badge color="green">{user.referral_count} Joined</Badge>
+         </div>
+         <div className="flex gap-2">
+            <div className="flex-1 bg-black border border-gray-800 rounded-lg flex items-center justify-center p-3">
+               <span className="font-mono text-xl text-white font-bold tracking-widest">{user.referral_code}</span>
+            </div>
+            <button className="bg-[#262626] px-4 rounded-lg border border-gray-700 text-white hover:border-[#CCFF00]">
+               <Copy size={20} />
+            </button>
+         </div>
+      </div>
+
+      {/* VIP UPGRADE CARD */}
+      {user.sidekick_level === 'premium' && (
+        <div className="bg-gradient-to-br from-[#121212] to-[#1A1A1A] rounded-xl border border-[#CCFF00] p-6 mb-8 relative overflow-hidden">
+           <div className="absolute top-0 right-0 p-4 opacity-10"><Crown size={80} /></div>
+           <h3 className="font-display text-2xl text-white uppercase italic mb-1">Become VIP</h3>
+           <p className="text-xs text-gray-400 mb-6 max-w-[200px]">Unlock high-ticket campaigns, verified badge, and priority payments.</p>
+           
+           <div className="space-y-4 mb-6">
+              <div>
+                 <div className="flex justify-between text-[10px] uppercase font-bold text-gray-500 mb-1">
+                    <span>Completed Campaigns</span>
+                    <span className={user.completed_tasks >= 5 ? 'text-[#CCFF00]' : ''}>{user.completed_tasks}/5</span>
+                 </div>
+                 <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#CCFF00]" style={{ width: `${Math.min(100, (user.completed_tasks/5)*100)}%` }}></div>
+                 </div>
+              </div>
+              <div>
+                 <div className="flex justify-between text-[10px] uppercase font-bold text-gray-500 mb-1">
+                    <span>Referrals</span>
+                    <span className={user.referral_count >= 5 ? 'text-[#CCFF00]' : ''}>{user.referral_count}/5</span>
+                 </div>
+                 <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#CCFF00]" style={{ width: `${Math.min(100, (user.referral_count/5)*100)}%` }}></div>
+                 </div>
+              </div>
+           </div>
+
+           {user.vip_status === 'payment_submitted' ? (
+              <button disabled className="w-full py-3 rounded-lg font-bold uppercase text-sm bg-gray-800 text-gray-500 border border-gray-700 cursor-wait">
+                 Pending Admin Approval...
+              </button>
+           ) : (
+             <button 
+               onClick={() => setShowVipPaymentModal(true)}
+               disabled={user.completed_tasks < 5 || user.referral_count < 5}
+               className={`w-full py-3 rounded-lg font-bold uppercase text-sm flex items-center justify-center gap-2 transition-all
+                  ${(user.completed_tasks >= 5 && user.referral_count >= 5) 
+                    ? 'bg-[#CCFF00] text-black hover:bg-[#b3e600] shadow-[0_0_15px_rgba(204,255,0,0.3)]' 
+                    : 'bg-gray-800 text-gray-600 cursor-not-allowed border border-gray-700'}`}
+             >
+                {(user.completed_tasks >= 5 && user.referral_count >= 5) ? 'Pay RM15 & Upgrade' : 'Requirements Not Met'}
+             </button>
+           )}
+        </div>
+      )}
+
+      {/* Settings */}
+      <div className="flex items-center space-x-2 mb-4">
+        <div className="h-4 w-1 bg-gray-600"></div>
+        <h3 className="font-display text-xl text-gray-400 uppercase tracking-wide">System</h3>
+      </div>
+      
+      <button className="w-full py-4 text-red-400 text-xs font-bold uppercase tracking-widest bg-red-900/10 border border-red-900/30 rounded-full hover:bg-red-900/20 transition-colors">
+        Deactivate Session
+      </button>
+    </div>
+  );
+
+  const MyTasks = () => {
+    const active = myApplications.filter(app => ['applied', 'accepted', 'submitted', 'under_review'].includes(app.status));
+    const history = myApplications.filter(app => ['approved', 'paid', 'rejected'].includes(app.status));
+
+    return (
+      <div className="pb-20">
+        <header className="flex justify-between items-center mb-6 pt-2">
+            <h1 className="text-4xl font-display text-white uppercase tracking-wide">My Ops</h1>
+        </header>
+        
+        {active.length === 0 && (
+          <div className="text-center py-12 bg-[#262626] rounded-2xl border border-dashed border-gray-700">
+            <Briefcase className="mx-auto text-gray-600 mb-3" size={40} />
+            <p className="text-gray-400 font-body uppercase text-sm tracking-wide">No active operations</p>
+            <button 
+              onClick={() => setActiveTab('feed')}
+              className="mt-6 text-[#CCFF00] font-bold text-xs uppercase tracking-widest border-b border-[#CCFF00] pb-1"
+            >
+              Initiate New Task
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {active.map(app => (
+            <div 
+              key={app.id}
+              onClick={() => {
+                const fullTask = INITIAL_TASKS.find(t => t.id === app.taskId) || {
+                  title: app.taskTitle, reward: app.reward, exp_reward: app.exp || 0, brand: app.brand, platform: app.platform,
+                  description: 'Detailed instructions loaded...', instructions: ['Post content', 'Tag brand'], hashtags: ['#ad']
+                };
+                setSelectedTask(fullTask);
+              }}
+              className="bg-[#262626] p-4 rounded-xl border border-gray-700 hover:border-[#CCFF00] transition-colors flex justify-between items-center cursor-pointer"
+            >
+              <div>
+                <div className="flex items-center space-x-3 mb-2">
+                  <h4 className="font-body font-bold text-white uppercase text-sm">{app.taskTitle}</h4>
+                  <PlatformIcon platform={app.platform} />
+                </div>
+                <div className="flex items-center space-x-3">
+                  <StatusBadge status={app.status} />
+                  <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Due Soon</span>
+                </div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-[#1A1A1A] flex items-center justify-center border border-gray-700">
+                <ChevronRight className="text-gray-400" size={16} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {history.length > 0 && (
+          <>
+            <div className="flex items-center space-x-2 mb-2 mt-8">
+                <div className="h-4 w-1 bg-gray-600"></div>
+                <h3 className="font-display text-xl text-gray-400 uppercase tracking-wide">Mission Log</h3>
+            </div>
+            <div className="space-y-3">
+              {history.map(app => (
+                <div 
+                  key={app.id}
+                  onClick={() => {
+                      const fullTask = INITIAL_TASKS.find(t => t.id === app.taskId) || {
+                       title: app.taskTitle, reward: app.reward, exp_reward: app.exp || 0, brand: app.brand, platform: app.platform,
+                       description: 'Historical task.', instructions: [], hashtags: []
+                     };
+                     setSelectedTask(fullTask);
+                  }}
+                  className="bg-[#1A1A1A] p-4 rounded-xl border border-gray-800 flex justify-between items-center opacity-80 hover:opacity-100"
+                >
+                  <div>
+                    <h4 className="font-body font-bold text-gray-300 text-sm uppercase">{app.taskTitle}</h4>
+                    <span className="text-[10px] text-gray-600 font-bold uppercase tracking-wider">{app.date}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className={`block font-display text-lg tracking-wide ${app.status === 'rejected' ? 'text-red-900 line-through' : 'text-[#3D4421] text-opacity-100 text-green-700'}`}>RM {app.reward}</span>
+                    <span className="text-[9px] uppercase font-bold text-gray-600 tracking-widest">{app.status}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // --- RENDER ---
+
+  return (
+    <div className="min-h-screen bg-gray-900 font-sans text-gray-100 flex justify-center">
+      {/* Font Injection */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@400;500;600;700;800&display=swap');
+        
+        .font-display { font-family: 'Anton', sans-serif; }
+        .font-body { font-family: 'Montserrat', sans-serif; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        @keyframes slide-up {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
+        }
+        @keyframes slide-down {
+          from { transform: translateY(-100%); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-down { animation: slide-down 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      `}</style>
+
+      {/* Mobile Container */}
+      <div className="w-full max-w-md bg-[#121212] min-h-screen shadow-2xl relative overflow-hidden border-x border-gray-800">
+        
+        {/* Top Notification Toast */}
+        {notificationMsg && (
+          <div className="absolute top-6 left-4 right-4 bg-[#CCFF00] text-black px-5 py-4 rounded-lg shadow-2xl z-50 flex items-center animate-slide-down border-2 border-white">
+            <CheckCircle size={20} className="text-black mr-3" />
+            <span className="text-xs font-bold uppercase tracking-wider">{notificationMsg}</span>
+          </div>
+        )}
+
+        {/* Content Area */}
+        <div className="h-full overflow-y-auto px-5 pt-6 custom-scrollbar">
+          {activeTab === 'feed' && <TaskFeed />}
+          {activeTab === 'tasks' && <MyTasks />}
+          {activeTab === 'wallet' && <WalletScreen />}
+          {activeTab === 'leaderboard' && <LeaderboardScreen />}
+          {activeTab === 'profile' && <ProfileScreen />}
+        </div>
+
+        {/* Modals */}
+        {selectedTask && (
+          <TaskDetailView 
+            task={selectedTask} 
+            onClose={() => setSelectedTask(null)}
+            onApply={handleApply}
+            onSimulateApproval={handleSimulateApproval}
+            onSubmitProof={handleSubmitProof}
+            userApplications={myApplications}
+            currentUser={user}
+            onClaim={(app) => setClaimingApp(app)}
+          />
+        )}
+        {showNotifications && <NotificationCenter notifications={NOTIFICATIONS} onClose={() => setShowNotifications(false)} />}
+        {showBroadcasts && <BroadcastCenter broadcasts={broadcasts} onClose={() => setShowBroadcasts(false)} />}
+        {showQR && <QRModal onClose={() => setShowQR(false)} />}
+        {activeBroadcast && <IncomingTransmissionModal message={activeBroadcast} onClose={() => setActiveBroadcast(null)} />}
+        {claimingApp && <ClaimQRModal claimingApp={claimingApp} onClose={() => setClaimingApp(null)} onConfirm={handleConfirmClaim} />}
+        {showVipPaymentModal && <VipPaymentModal onClose={() => setShowVipPaymentModal(false)} onConfirm={handleVipRequest} />}
+
+        {/* Bottom Navigation */}
+        <div className="absolute bottom-0 left-0 right-0 bg-[#1A1A1A] border-t border-gray-800 px-6 py-4 pb-6 flex justify-between items-center z-40">
+           <button 
+            onClick={() => setActiveTab('feed')}
+            className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'feed' ? 'text-[#CCFF00]' : 'text-gray-500 hover:text-gray-300'}`}
+           >
+             <Home size={24} strokeWidth={activeTab === 'feed' ? 2.5 : 2} />
+             <span className="text-[9px] font-bold uppercase tracking-widest">Feed</span>
+           </button>
+           
+           <button 
+            onClick={() => setActiveTab('tasks')}
+            className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'tasks' ? 'text-[#CCFF00]' : 'text-gray-500 hover:text-gray-300'}`}
+           >
+             <div className="relative">
+               <Briefcase size={24} strokeWidth={activeTab === 'tasks' ? 2.5 : 2} />
+               {myApplications.filter(a => a.status === 'accepted').length > 0 && (
+                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#CCFF00] rounded-full border-2 border-[#1A1A1A]"></span>
+               )}
+             </div>
+             <span className="text-[9px] font-bold uppercase tracking-widest">Ops</span>
+           </button>
+
+           <button 
+            onClick={() => setActiveTab('wallet')}
+            className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'wallet' ? 'text-[#CCFF00]' : 'text-gray-500 hover:text-gray-300'}`}
+           >
+             <Wallet size={24} strokeWidth={activeTab === 'wallet' ? 2.5 : 2} />
+             <span className="text-[9px] font-bold uppercase tracking-widest">Funds</span>
+           </button>
+
+           <button 
+            onClick={() => setActiveTab('leaderboard')}
+            className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'leaderboard' ? 'text-[#CCFF00]' : 'text-gray-500 hover:text-gray-300'}`}
+           >
+             <Award size={24} strokeWidth={activeTab === 'leaderboard' ? 2.5 : 2} />
+             <span className="text-[9px] font-bold uppercase tracking-widest">Rank</span>
+           </button>
+
+           <button 
+            onClick={() => setActiveTab('profile')}
+            className={`flex flex-col items-center space-y-1 transition-colors ${activeTab === 'profile' ? 'text-[#CCFF00]' : 'text-gray-500 hover:text-gray-300'}`}
+           >
+             <User size={24} strokeWidth={activeTab === 'profile' ? 2.5 : 2} />
+             <span className="text-[9px] font-bold uppercase tracking-widest">ID</span>
+           </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}

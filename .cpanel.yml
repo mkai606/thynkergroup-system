@@ -1,0 +1,13 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home3/thynkerg/public_html
+    # Copy public files to public_html
+    - /bin/cp -R public/build $DEPLOYPATH/
+    - /bin/cp public/.htaccess $DEPLOYPATH/
+    - /bin/cp public/favicon.ico $DEPLOYPATH/
+    - /bin/cp public/robots.txt $DEPLOYPATH/
+    # Deploy index.php with corrected paths
+    - /bin/cp public/index.php $DEPLOYPATH/index.php
+    - /bin/sed -i "s|__DIR__.'/../vendor|__DIR__.'/../thynkergroup-system/vendor|g" $DEPLOYPATH/index.php
+    - /bin/sed -i "s|__DIR__.'/../bootstrap|__DIR__.'/../thynkergroup-system/bootstrap|g" $DEPLOYPATH/index.php
