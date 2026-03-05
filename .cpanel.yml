@@ -9,5 +9,5 @@ deployment:
     - /bin/cp public/robots.txt $DEPLOYPATH/
     # Deploy index.php with corrected paths
     - /bin/cp public/index.php $DEPLOYPATH/index.php
-    - /bin/sed -i "s|__DIR__.'/../vendor|__DIR__.'/../thynkergroup-system/vendor|g" $DEPLOYPATH/index.php
-    - /bin/sed -i "s|__DIR__.'/../bootstrap|__DIR__.'/../thynkergroup-system/bootstrap|g" $DEPLOYPATH/index.php
+    - /bin/sed -i "s|__DIR__.'/../vendor|__DIR__.'/../thynkergroup-system-1/vendor|g" $DEPLOYPATH/index.php
+    - /bin/sed -i "s|__DIR__.'/../bootstrap|__DIR__.'/../thynkergroup-system-1/bootstrap|g" $DEPLOYPATH/index.php
