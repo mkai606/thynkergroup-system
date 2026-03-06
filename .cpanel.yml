@@ -13,3 +13,5 @@ deployment:
     - /bin/sed -i "s|__DIR__.'/../vendor|__DIR__.'/../thynkergroup-system-1/vendor|g" $DEPLOYPATH/index.php
     - /bin/sed -i "s|__DIR__.'/../bootstrap|__DIR__.'/../thynkergroup-system-1/bootstrap|g" $DEPLOYPATH/index.php
     - /bin/sed -i "s|__DIR__.'/../storage|__DIR__.'/../thynkergroup-system-1/storage|g" $DEPLOYPATH/index.php
+    # Create storage symlink in public_html
+    - /bin/ln -sfn /home3/thynkerg/thynkergroup-system-1/storage/app/public $DEPLOYPATH/storage

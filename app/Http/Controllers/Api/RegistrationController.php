@@ -97,7 +97,7 @@ class RegistrationController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Application submitted! We will review your profile shortly.',
+            'message' => 'Application submitted! We will notify you via email once reviewed. Please check your inbox regularly.',
         ]);
     }
 }

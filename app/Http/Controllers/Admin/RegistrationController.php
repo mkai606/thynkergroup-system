@@ -11,6 +11,7 @@ use App\Models\Wallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class RegistrationController extends Controller
@@ -139,8 +140,15 @@ class RegistrationController extends Controller
             return $user;
         });
 
+        // Send approval email
+        try {
+            Mail::to($registration->email)->send(new \App\Mail\RegistrationApproved($registration, $tier));
+        } catch (\Throwable $e) {
+            // Don't block approval if email fails
+        }
+
         return redirect()->route('admin.registrations')
-            ->with('success', $registration->full_name . ' approved as Tier ' . $tier . ' agent. Default password: sidekick123');
+            ->with('success', $registration->full_name . ' approved as Tier ' . $tier . ' agent. Email sent.');
     }
 
     public function reject(Registration $registration)
@@ -149,8 +157,15 @@ class RegistrationController extends Controller
             'status' => 'rejected',
         ]);
 
+        // Send rejection email
+        try {
+            Mail::to($registration->email)->send(new \App\Mail\RegistrationRejected($registration));
+        } catch (\Throwable $e) {
+            // Don't block rejection if email fails
+        }
+
         return redirect()->route('admin.registrations')
-            ->with('success', $registration->full_name . ' registration rejected.');
+            ->with('success', $registration->full_name . ' registration rejected. Email sent.');
     }
 
     private function calculateTier(int $followers): string

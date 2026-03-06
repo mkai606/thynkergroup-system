@@ -162,32 +162,43 @@
                     </div>
                     <div class="space-y-3">
                         @foreach($registration->highlightPosts as $post)
-                            <a href="{{ $post->post_url }}" target="_blank" rel="noopener" class="flex items-start gap-4 p-3 -mx-3 rounded-lg hover:bg-dark/50 transition-colors group">
-                                <div class="w-16 h-16 bg-dark rounded-lg flex items-center justify-center border border-dark-lighter group-hover:border-neon/30 transition-colors flex-shrink-0">
-                                    @if($post->post_type === 'video')
-                                        <svg class="w-6 h-6 text-gray-600 group-hover:text-neon transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" stroke-width="2"/></svg>
-                                    @else
-                                        <svg class="w-6 h-6 text-gray-600 group-hover:text-neon transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    @endif
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2">
-                                        <span class="px-1.5 py-0.5 text-[10px] font-medium bg-info/10 text-info rounded">{{ ucfirst($post->post_type) }}</span>
-                                        <svg class="w-3 h-3 text-gray-600 group-hover:text-neon transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                                    </div>
-                                    <div class="flex items-center gap-3 mt-1.5 text-xs">
-                                        <span class="flex items-center gap-1 text-danger">
+                            @php
+                                $isUpload = str_starts_with($post->post_url, 'registrations/');
+                                $fileUrl = $isUpload ? asset('storage/' . $post->post_url) : $post->post_url;
+                            @endphp
+                            <div class="p-3 -mx-3 rounded-lg">
+                                @if($isUpload && $post->post_type === 'image')
+                                    <a href="{{ $fileUrl }}" target="_blank" rel="noopener" class="block">
+                                        <img src="{{ $fileUrl }}" alt="Sample content" class="w-full max-h-64 object-contain rounded-lg border border-dark-lighter bg-dark">
+                                    </a>
+                                @elseif($isUpload && $post->post_type === 'video')
+                                    <video controls class="w-full max-h-64 rounded-lg border border-dark-lighter bg-dark">
+                                        <source src="{{ $fileUrl }}">
+                                    </video>
+                                @else
+                                    <a href="{{ $post->post_url }}" target="_blank" rel="noopener" class="flex items-center gap-3 group hover:bg-dark/50 rounded-lg p-2 transition-colors">
+                                        <div class="w-10 h-10 bg-dark rounded-lg flex items-center justify-center border border-dark-lighter flex-shrink-0">
+                                            <svg class="w-5 h-5 text-gray-600 group-hover:text-neon transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        </div>
+                                        <span class="text-sm text-gray-400 group-hover:text-neon truncate transition-colors">{{ $post->post_url }}</span>
+                                    </a>
+                                @endif
+                                <div class="flex items-center gap-3 mt-2">
+                                    <span class="px-1.5 py-0.5 text-[10px] font-medium bg-info/10 text-info rounded">{{ ucfirst($post->post_type) }}</span>
+                                    @if($post->likes > 0)
+                                        <span class="flex items-center gap-1 text-xs text-danger">
                                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/></svg>
                                             {{ number_format($post->likes) }}
                                         </span>
-                                        <span class="flex items-center gap-1 text-info">
+                                    @endif
+                                    @if($post->comments > 0)
+                                        <span class="flex items-center gap-1 text-xs text-info">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                                             {{ number_format($post->comments) }}
                                         </span>
-                                    </div>
-                                    <p class="text-xs text-gray-500 group-hover:text-gray-400 mt-1 truncate transition-colors">{{ $post->post_url }}</p>
+                                    @endif
                                 </div>
-                            </a>
+                            </div>
                         @endforeach
                     </div>
                 </div>
@@ -219,9 +230,15 @@
                         @endif
                     @endif
                     @if($registration->notes)
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-500">Notes</span>
-                            <span class="text-gray-300">{{ $registration->notes }}</span>
+                        <div class="pt-2 border-t border-dark-lighter">
+                            <span class="text-gray-500 text-xs uppercase tracking-wider block mb-2">Additional Info</span>
+                            @foreach(explode(' | ', $registration->notes) as $note)
+                                @php [$label, $value] = array_pad(explode(': ', $note, 2), 2, ''); @endphp
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="text-gray-500">{{ $label }}</span>
+                                    <span class="text-gray-300">{{ $value }}</span>
+                                </div>
+                            @endforeach
                         </div>
                     @endif
                 </div>
