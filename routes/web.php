@@ -18,6 +18,18 @@ use Illuminate\Support\Facades\Route;
 // Guest Routes
 // ──────────────────────────────────────────────
 
+// Landing page
+Route::get('/', function () {
+    if (auth()->check()) {
+        return match (auth()->user()->role) {
+            'admin' => redirect()->route('admin.dashboard'),
+            'agent' => redirect()->route('agent.dashboard'),
+            default => view('landing'),
+        };
+    }
+    return view('landing');
+})->name('home');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
@@ -29,15 +41,6 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
-
-    // Root redirect based on role
-    Route::get('/', function () {
-        return match (auth()->user()->role) {
-            'admin' => redirect()->route('admin.dashboard'),
-            'agent' => redirect()->route('agent.dashboard'),
-            default => redirect()->route('login'),
-        };
-    })->name('home');
 });
 
 // ──────────────────────────────────────────────

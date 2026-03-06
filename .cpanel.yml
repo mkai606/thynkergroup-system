@@ -4,6 +4,7 @@ deployment:
     - export DEPLOYPATH=/home3/thynkerg/public_html
     # Copy public files to public_html
     - /bin/cp -R public/build $DEPLOYPATH/
+    - /bin/cp -R public/landing $DEPLOYPATH/
     - /bin/cp public/.htaccess $DEPLOYPATH/
     - /bin/cp public/favicon.ico $DEPLOYPATH/
     - /bin/cp public/robots.txt $DEPLOYPATH/
@@ -11,3 +12,4 @@ deployment:
     - /bin/cp public/index.php $DEPLOYPATH/index.php
     - /bin/sed -i "s|__DIR__.'/../vendor|__DIR__.'/../thynkergroup-system-1/vendor|g" $DEPLOYPATH/index.php
     - /bin/sed -i "s|__DIR__.'/../bootstrap|__DIR__.'/../thynkergroup-system-1/bootstrap|g" $DEPLOYPATH/index.php
+    - /bin/sed -i "s|__DIR__.'/../storage|__DIR__.'/../thynkergroup-system-1/storage|g" $DEPLOYPATH/index.php
