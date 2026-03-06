@@ -18,6 +18,10 @@ use Illuminate\Support\Facades\Route;
 // Guest Routes
 // ──────────────────────────────────────────────
 
+// Public API — landing page registration
+Route::post('/api/register-sidekick', [\App\Http\Controllers\Api\RegistrationController::class, 'store'])
+    ->name('api.register-sidekick');
+
 // Landing page
 Route::get('/', function () {
     if (auth()->check()) {
