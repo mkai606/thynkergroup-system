@@ -18,6 +18,15 @@ use Illuminate\Support\Facades\Route;
 // Guest Routes
 // ──────────────────────────────────────────────
 
+// Serve storage files (cPanel fallback — symlink may not work on shared hosting)
+Route::get('/storage/{path}', function (string $path) {
+    $fullPath = storage_path('app/public/' . $path);
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+    return response()->file($fullPath);
+})->where('path', '.*')->name('storage.serve');
+
 // Public API — landing page registration
 Route::post('/api/register-sidekick', [\App\Http\Controllers\Api\RegistrationController::class, 'store'])
     ->name('api.register-sidekick');
