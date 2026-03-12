@@ -9,6 +9,7 @@
     <title>Thynker — Sidekicks Marketing</title>
     <script type="module" crossorigin src="{{ asset('landing/assets/index-DxBSBSsz.js') }}"></script>
     <link rel="stylesheet" crossorigin href="{{ asset('landing/assets/index-DK4VuXE7.css') }}">
+    <style>#pricing { display: none !important; } a[href="#pricing"] { display: none !important; }</style>
   </head>
   <body>
     <div id="root"></div>
