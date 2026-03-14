@@ -9,6 +9,10 @@
             <h2 class="font-heading text-sm tracking-wider text-gray-400">
                 SIDEKICK HUB ROSTER ({{ $sidekicks->count() }})
             </h2>
+            <a href="{{ route('admin.sidekicks.export', request()->query()) }}"
+               class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-neon/10 text-neon border border-neon/30 rounded-lg hover:bg-neon/20 transition-colors whitespace-nowrap">
+                Export CSV
+            </a>
             <form method="GET" action="{{ route('admin.sidekicks') }}" id="skFilterForm" class="flex items-center gap-2 flex-wrap">
                 @if(request('search'))
                     <input type="hidden" name="search" value="{{ request('search') }}">

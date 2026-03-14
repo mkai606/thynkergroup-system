@@ -58,7 +58,7 @@
             @if($task->min_followers > 0)
                 <div class="flex items-center gap-1 text-xs text-gray-400">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Min {{ number_format($task->min_followers) }}
+                    Min {{ number_format($task->min_followers) }} Followers
                 </div>
             @endif
         </div>
@@ -184,6 +184,19 @@
                         <span class="text-[9px] mt-1.5 uppercase tracking-wider font-bold {{ $isCurrent ? 'text-neon' : ($isActive ? 'text-gray-400' : 'text-gray-600') }}">{{ $labels[$i] }}</span>
                     </div>
                 @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Claim Bounty QR --}}
+    @if($application && in_array($application->status, ['approved', 'paid']) && $task->campaign?->tng_qr_url)
+        <div class="mt-6 mb-4">
+            <div class="bg-[#1A1A1A] border border-neon/20 rounded-xl p-4 text-center">
+                <p class="text-[10px] text-gray-500 uppercase tracking-wider font-bold mb-2">Claim Bounty</p>
+                <p class="text-xs text-gray-400 mb-3">Scan this QR to receive your payment</p>
+                <div class="bg-white rounded-lg p-3 inline-block">
+                    <img src="{{ asset('storage/' . $task->campaign->tng_qr_url) }}" alt="TNG QR" class="w-48 h-48 object-contain">
+                </div>
             </div>
         </div>
     @endif

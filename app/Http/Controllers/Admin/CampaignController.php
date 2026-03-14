@@ -10,6 +10,7 @@ use App\Models\TaskHashtag;
 use App\Models\TaskInstruction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class CampaignController extends Controller
 {
@@ -58,6 +59,7 @@ class CampaignController extends Controller
             'vip_only' => ['nullable', 'boolean'],
             'instructions' => ['nullable', 'string'],
             'deadline_days' => ['nullable', 'integer', 'min:1', 'max:90'],
+            'tng_qr' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:2048'],
         ]);
 
         $totalBudget = $validated['slots_total'] * $validated['reward_amount'];
@@ -136,6 +138,14 @@ class CampaignController extends Controller
 
             return $campaign;
         });
+
+        // Handle TNG QR upload (outside transaction — needs campaign ID)
+        if ($request->hasFile('tng_qr')) {
+            $file = $request->file('tng_qr');
+            $filename = 'campaign_qr/campaign_' . $campaign->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            Storage::disk('public')->put($filename, file_get_contents($file->getPathname()));
+            $campaign->update(['tng_qr_url' => $filename]);
+        }
 
         return redirect()->route('admin.campaigns.show', $campaign)
             ->with('success', 'Campaign "' . $campaign->title . '" created. Liability: RM ' . number_format($totalBudget, 2));

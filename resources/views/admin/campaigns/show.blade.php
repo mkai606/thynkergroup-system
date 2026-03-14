@@ -272,6 +272,15 @@
                             </span>
                         </div>
                     </div>
+
+                    @if($campaign->tng_qr_url)
+                        <div class="border-t border-dark-lighter pt-4 mt-4">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-3">Payment QR</p>
+                            <div class="bg-white rounded-lg p-3 inline-block">
+                                <img src="{{ asset('storage/' . $campaign->tng_qr_url) }}" alt="Campaign TNG QR" class="w-full max-w-[200px] h-auto object-contain">
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endif
         </div>

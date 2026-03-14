@@ -120,6 +120,82 @@
                 });
             });
         }, 2000); // Wait for React render
+
+        // Brand form handler
+        setTimeout(function() {
+            var brandBtn = null;
+            document.querySelectorAll('button').forEach(function(btn) {
+                if (btn.textContent.trim() === 'Launch My Campaign') brandBtn = btn;
+            });
+            if (!brandBtn) return;
+
+            brandBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                var get = function(id) {
+                    var el = document.getElementById(id);
+                    return el ? el.value.trim() : '';
+                };
+
+                var name = get('joinbrand-name');
+                var email = get('joinbrand-email');
+                var brandName = get('joinbrand-brand');
+                var category = get('joinbrand-category');
+                var goal = get('joinbrand-goal');
+                var budget = get('joinbrand-budget');
+
+                if (!name || !email || !brandName) {
+                    alert('Please fill in Name, Email and Brand Name.');
+                    return;
+                }
+
+                brandBtn.disabled = true;
+                brandBtn.style.opacity = '0.5';
+                brandBtn.textContent = 'Submitting...';
+
+                var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                fetch('/api/brand-lead', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        email: email,
+                        brand_name: brandName,
+                        product_category: category,
+                        campaign_goal: goal,
+                        budget_range: budget
+                    })
+                })
+                .then(function(r) { return r.json().then(function(data) { return { ok: r.ok, data: data }; }); })
+                .then(function(result) {
+                    if (result.ok && result.data.success) {
+                        brandBtn.textContent = 'Submitted!';
+                        brandBtn.style.background = '#22c55e';
+                        alert(result.data.message);
+                    } else {
+                        brandBtn.disabled = false;
+                        brandBtn.style.opacity = '1';
+                        brandBtn.textContent = 'Launch My Campaign';
+                        var msg = result.data.message || 'Submission failed.';
+                        if (result.data.errors) {
+                            msg = Object.values(result.data.errors).flat().join('\n');
+                        }
+                        alert(msg);
+                    }
+                })
+                .catch(function() {
+                    brandBtn.disabled = false;
+                    brandBtn.style.opacity = '1';
+                    brandBtn.textContent = 'Launch My Campaign';
+                    alert('Network error. Please try again.');
+                });
+            });
+        }, 2500);
     });
     </script>
   </body>

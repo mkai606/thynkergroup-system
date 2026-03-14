@@ -30,6 +30,8 @@ Route::get('/storage/{path}', function (string $path) {
 // Public API — landing page registration
 Route::post('/api/register-sidekick', [\App\Http\Controllers\Api\RegistrationController::class, 'store'])
     ->name('api.register-sidekick');
+Route::post('/api/brand-lead', [\App\Http\Controllers\Api\BrandLeadController::class, 'store'])
+    ->name('api.brand-lead');
 
 // Landing page
 Route::get('/', function () {
@@ -86,8 +88,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/registrations/{registration}/approve', [RegistrationController::class, 'approve'])->name('registrations.approve');
     Route::post('/registrations/{registration}/reject', [RegistrationController::class, 'reject'])->name('registrations.reject');
 
+    // Hot Leads
+    Route::get('/hot-leads', [\App\Http\Controllers\Admin\HotLeadController::class, 'index'])->name('hot-leads');
+    Route::post('/hot-leads/{lead}/status', [\App\Http\Controllers\Admin\HotLeadController::class, 'updateStatus'])->name('hot-leads.updateStatus');
+
     // Sidekick Hub
     Route::get('/sidekicks', [SidekickController::class, 'index'])->name('sidekicks');
+    Route::get('/sidekicks/export', [SidekickController::class, 'export'])->name('sidekicks.export');
     Route::get('/sidekicks/{user}', [SidekickController::class, 'show'])->name('sidekicks.show');
     Route::post('/sidekicks/{user}/flag', [SidekickController::class, 'flag'])->name('sidekicks.flag');
     Route::post('/sidekicks/{user}/unflag', [SidekickController::class, 'unflag'])->name('sidekicks.unflag');

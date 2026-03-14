@@ -15,7 +15,7 @@
             <p class="text-gray-500 text-sm mt-1">Define parameters & allocate budget</p>
         </div>
 
-        <form method="POST" action="{{ route('admin.campaigns.store') }}">
+        <form method="POST" action="{{ route('admin.campaigns.store') }}" enctype="multipart/form-data">
             @csrf
 
             {{-- Section 01: Mission Identity --}}
@@ -170,6 +170,18 @@ Post di Instagram Reels dengan hashtag yang ditetapkan
 Tag akaun brand di caption
 Screenshot insight post selepas 48 jam dan submit sebagai bukti</pre>
                     </div>
+                </div>
+            </div>
+
+            {{-- Section 05: Payment QR --}}
+            <div class="mb-8">
+                <p class="text-neon text-xs font-bold tracking-widest mb-4">05 // PAYMENT QR</p>
+                <div>
+                    <label for="tng_qr" class="block text-xs text-gray-400 uppercase tracking-wider mb-2">TNG E-Wallet QR Code</label>
+                    <p class="text-[10px] text-gray-600 mb-3">Upload a unique TNG QR for this campaign. Agents will scan this to claim their bounty.</p>
+                    <input type="file" id="tng_qr" name="tng_qr" accept="image/jpeg,image/png,image/webp"
+                           class="w-full bg-dark border border-dark-lighter rounded-lg px-4 py-3 text-sm text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wider file:bg-neon/10 file:text-neon hover:file:bg-neon/20 focus:outline-none">
+                    @error('tng_qr') <p class="mt-1 text-xs text-danger">{{ $message }}</p> @enderror
                 </div>
             </div>
 

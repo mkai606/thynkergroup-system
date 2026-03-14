@@ -18,6 +18,7 @@ class Campaign extends Model
         'spent_budget',
         'start_at',
         'end_at',
+        'tng_qr_url',
     ];
 
     protected $casts = [

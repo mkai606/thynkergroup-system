@@ -50,6 +50,7 @@
                     <x-admin-nav-link route="admin.campaigns" icon="crosshair" label="Campaign Ops" />
                     <x-admin-nav-link route="admin.approvals" icon="check-circle" label="Approvals" />
                     <x-admin-nav-link route="admin.registrations" icon="user-plus" label="Registrations" />
+                    <x-admin-nav-link route="admin.hot-leads" icon="zap" label="Hot Leads" />
                 </div>
 
                 <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3 px-3">Network Assets</p>
